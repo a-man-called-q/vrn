@@ -6338,8 +6338,9 @@ var Y2 = ({ indicator: t = "dots" } = {}) => {
 };
 
 // src/index.ts
-import { mkdirSync as mkdirSync3, existsSync as existsSync3 } from "node:fs";
+import { mkdirSync as mkdirSync3, existsSync as existsSync2 } from "node:fs";
 import { join as join6, resolve } from "node:path";
+import { execSync, spawnSync } from "node:child_process";
 
 // src/generators/api.ts
 import { join as join2 } from "node:path";
@@ -6511,19 +6512,19 @@ function copyTemplateDir(srcDir, destDir, data, _isRoot = true) {
 }
 
 // src/generators/api.ts
-var TEMPLATES_DIR = new URL("../../templates", import.meta.url).pathname;
+var TEMPLATES_DIR = new URL("../templates", import.meta.url).pathname;
 function generateApi(targetDir, data) {
   const { name, authProvider } = data;
   copyTemplateDir(join2(TEMPLATES_DIR, "packages/db/common"), join2(targetDir, `packages/db-${name}`), data);
   copyTemplateDir(join2(TEMPLATES_DIR, `packages/db/${authProvider}`), join2(targetDir, `packages/db-${name}`), data);
-  copyTemplateDir(join2(TEMPLATES_DIR, "packages/api-client"), join2(targetDir, `packages/api-client-${name}`), data);
-  copyTemplateDir(join2(TEMPLATES_DIR, "apps/api/common"), join2(targetDir, `apps/api-${name}`), data);
-  copyTemplateDir(join2(TEMPLATES_DIR, `apps/api/${authProvider}`), join2(targetDir, `apps/api-${name}`), data);
+  copyTemplateDir(join2(TEMPLATES_DIR, "packages/api-client"), join2(targetDir, `packages/${name}-service-client`), data);
+  copyTemplateDir(join2(TEMPLATES_DIR, "apps/api/common"), join2(targetDir, `apps/${name}-service`), data);
+  copyTemplateDir(join2(TEMPLATES_DIR, `apps/api/${authProvider}`), join2(targetDir, `apps/${name}-service`), data);
 }
 
 // src/generators/portal.ts
 import { join as join3 } from "node:path";
-var TEMPLATES_DIR2 = new URL("../../templates", import.meta.url).pathname;
+var TEMPLATES_DIR2 = new URL("../templates", import.meta.url).pathname;
 function generatePortal(targetDir, data) {
   const { name, authProvider } = data;
   const destDir = join3(targetDir, `apps/portal-${name}`);
@@ -6547,7 +6548,7 @@ function generatePortal(targetDir, data) {
 
 // src/generators/backoffice.ts
 import { join as join4 } from "node:path";
-var TEMPLATES_DIR3 = new URL("../../templates", import.meta.url).pathname;
+var TEMPLATES_DIR3 = new URL("../templates", import.meta.url).pathname;
 function generateBackoffice(targetDir, data) {
   const { name, authProvider } = data;
   const destDir = join4(targetDir, `apps/backoffice-${name}`);
@@ -6571,56 +6572,71 @@ function generateBackoffice(targetDir, data) {
 
 // src/generators/docker.ts
 import { join as join5 } from "node:path";
-import {
-  existsSync as existsSync2,
-  readFileSync as readFileSync2,
-  writeFileSync as writeFileSync2,
-  mkdirSync as mkdirSync2
-} from "node:fs";
-var TEMPLATES_DIR4 = new URL("../../templates", import.meta.url).pathname;
+import { writeFileSync as writeFileSync2, mkdirSync as mkdirSync2 } from "node:fs";
+var TEMPLATES_DIR4 = new URL("../templates", import.meta.url).pathname;
 function generateDocker(targetDir, data) {
-  const templatePath = join5(TEMPLATES_DIR4, "infra/docker-compose-block.hbs");
-  const rendered = processTemplateFile(templatePath, data);
   const infraDir = join5(targetDir, "infra");
   mkdirSync2(infraDir, { recursive: true });
-  const composePath = join5(infraDir, "docker-compose.yml");
-  if (existsSync2(composePath)) {
-    const existing = readFileSync2(composePath, "utf-8");
-    writeFileSync2(composePath, existing + `
-` + rendered, "utf-8");
-  } else {
-    const header = `version: "3.8"
+  let content = `version: "3.8"
 
 services:
 `;
-    writeFileSync2(composePath, header + rendered, "utf-8");
+  content += processTemplateFile(join5(TEMPLATES_DIR4, "infra/docker-compose-block.hbs"), data);
+  if (data.authProvider === "zitadel") {
+    content += processTemplateFile(join5(TEMPLATES_DIR4, "infra/zitadel-services.hbs"), data);
   }
+  content += processTemplateFile(join5(TEMPLATES_DIR4, "infra/docker-compose-footer.hbs"), data);
+  writeFileSync2(join5(infraDir, "docker-compose.yml"), content, "utf-8");
 }
 
 // src/index.ts
 var TEMPLATES_DIR5 = new URL("../templates", import.meta.url).pathname;
+function detectPmVersion(pm) {
+  const defaults = {
+    bun: "1.3.10",
+    npm: "10.9.2",
+    pnpm: "10.0.0",
+    yarn: "4.6.0"
+  };
+  try {
+    const raw = execSync(`${pm} --version`, { stdio: "pipe", timeout: 3000 }).toString().trim();
+    const match = raw.match(/\d+\.\d+\.\d+/);
+    return match ? match[0] : defaults[pm];
+  } catch {
+    return defaults[pm];
+  }
+}
+function detectMoonVersion() {
+  try {
+    const raw = execSync("moon --version", { stdio: "pipe", timeout: 3000 }).toString().trim();
+    const match = raw.match(/\d+\.\d+\.\d+/);
+    return match ? match[0] : null;
+  } catch {
+    return null;
+  }
+}
+async function fetchLatestMoonVersion() {
+  try {
+    const res = await fetch("https://api.github.com/repos/moonrepo/moon/releases/latest", {
+      headers: { "User-Agent": "create-vrn" }
+    });
+    const json = await res.json();
+    return json.tag_name.replace(/^v/, "");
+  } catch {
+    return "2.1.4";
+  }
+}
 async function main() {
   console.log();
   Ie("create-vrn — SaaS Monorepo Scaffolding");
+  const latestMoonVersionPromise = fetchLatestMoonVersion();
   const genType = await ve({
     message: "What do you want to generate?",
     options: [
-      {
-        value: "Full Application Suite (API + DB + Portal + Backoffice)",
-        label: "Full Application Suite (API + DB + Portal + Backoffice)"
-      },
-      {
-        value: "API Backend Only (+ DB + Client)",
-        label: "API Backend Only (+ DB + Client)"
-      },
-      {
-        value: "Portal Only (Frontend)",
-        label: "Portal Only (Frontend)"
-      },
-      {
-        value: "Backoffice Only (Admin)",
-        label: "Backoffice Only (Admin)"
-      }
+      { value: "Full Application Suite (API + DB + Portal + Backoffice)", label: "Full Application Suite (API + DB + Portal + Backoffice)" },
+      { value: "API Backend Only (+ DB + Client)", label: "Service Backend Only (+ DB + Client)" },
+      { value: "Portal Only (Frontend)", label: "Portal Only (Frontend)" },
+      { value: "Backoffice Only (Admin)", label: "Backoffice Only (Admin)" }
     ]
   });
   if (pD(genType)) {
@@ -6642,20 +6658,29 @@ async function main() {
   const authProvider = await ve({
     message: "Auth provider",
     options: [
-      {
-        value: "zitadel",
-        label: "Zitadel (OIDC, enterprise-grade)"
-      },
-      {
-        value: "better-auth",
-        label: "Better Auth (email/password, self-hosted)"
-      }
+      { value: "zitadel", label: "Zitadel (OIDC, enterprise-grade)" },
+      { value: "better-auth", label: "Better Auth (email/password, self-hosted)" }
     ]
   });
   if (pD(authProvider)) {
     xe("Cancelled.");
     process.exit(0);
   }
+  const packageManager = await ve({
+    message: "Package manager",
+    options: [
+      { value: "bun", label: "Bun" },
+      { value: "pnpm", label: "pnpm" },
+      { value: "npm", label: "npm" },
+      { value: "yarn", label: "Yarn" }
+    ]
+  });
+  if (pD(packageManager)) {
+    xe("Cancelled.");
+    process.exit(0);
+  }
+  const pm = packageManager;
+  const packageManagerVersion = detectPmVersion(pm);
   const isFullOrApi = genType === "Full Application Suite (API + DB + Portal + Backoffice)" || genType === "API Backend Only (+ DB + Client)";
   const isFullOrPortal = genType === "Full Application Suite (API + DB + Portal + Backoffice)" || genType === "Portal Only (Frontend)";
   const isFullOrBackoffice = genType === "Full Application Suite (API + DB + Portal + Backoffice)" || genType === "Backoffice Only (Admin)";
@@ -6665,60 +6690,72 @@ async function main() {
   let backofficePort = "5175";
   let apiSourceInput = "";
   if (isFullOrApi) {
-    const apiPortInput = await he({
-      message: "API Port",
-      placeholder: "4001",
-      initialValue: "4001"
-    });
-    if (pD(apiPortInput)) {
+    const v2 = await he({ message: "Service port", placeholder: "4001", initialValue: "4001" });
+    if (pD(v2)) {
       xe("Cancelled.");
       process.exit(0);
     }
-    apiPort = apiPortInput || "4001";
+    apiPort = v2 || "4001";
   }
   if (isFullOrPortal) {
-    const portalPortInput = await he({
-      message: "Portal Port",
-      placeholder: "3001",
-      initialValue: "3001"
-    });
-    if (pD(portalPortInput)) {
+    const v2 = await he({ message: "Portal port", placeholder: "3001", initialValue: "3001" });
+    if (pD(v2)) {
       xe("Cancelled.");
       process.exit(0);
     }
-    portalPort = portalPortInput || "3001";
+    portalPort = v2 || "3001";
   }
   if (isFullOrBackoffice) {
-    const backofficePortInput = await he({
-      message: "Backoffice Port",
-      placeholder: "5175",
-      initialValue: "5175"
-    });
-    if (pD(backofficePortInput)) {
+    const v2 = await he({ message: "Backoffice port", placeholder: "5175", initialValue: "5175" });
+    if (pD(v2)) {
       xe("Cancelled.");
       process.exit(0);
     }
-    backofficePort = backofficePortInput || "5175";
+    backofficePort = v2 || "5175";
   }
   if (!isFull && !isFullOrApi && (isFullOrPortal || isFullOrBackoffice)) {
-    const apiSourcePrompt = await he({
-      message: "Which API name does this frontend connect to?",
-      placeholder: "my-api",
+    const v2 = await he({
+      message: "Which service name does this frontend connect to?",
+      placeholder: "my-app",
       validate(value) {
         if (!value || value.trim() === "")
-          return "API name is required.";
+          return "Service name is required.";
       }
     });
-    if (pD(apiSourcePrompt)) {
+    if (pD(v2)) {
       xe("Cancelled.");
       process.exit(0);
     }
-    apiSourceInput = apiSourcePrompt;
+    apiSourceInput = v2;
+  }
+  const initGit = await ye({ message: "Initialize a git repository?", initialValue: true });
+  if (pD(initGit)) {
+    xe("Cancelled.");
+    process.exit(0);
+  }
+  const latestMoonVersion = await latestMoonVersionPromise;
+  const installedMoonVersion = detectMoonVersion();
+  let moonVersion = latestMoonVersion;
+  if (installedMoonVersion && installedMoonVersion !== latestMoonVersion) {
+    const choice = await ve({
+      message: `Moon version (installed: ${installedMoonVersion}, latest: ${latestMoonVersion})`,
+      options: [
+        { value: installedMoonVersion, label: `Keep installed  (${installedMoonVersion})` },
+        { value: latestMoonVersion, label: `Use latest  (${latestMoonVersion})` }
+      ]
+    });
+    if (pD(choice)) {
+      xe("Cancelled.");
+      process.exit(0);
+    }
+    moonVersion = choice;
+  } else if (installedMoonVersion) {
+    moonVersion = installedMoonVersion;
   }
   const apiSource = isFullOrApi ? name : apiSourceInput;
   const appName = name;
   const targetDir = resolve(process.cwd(), appName);
-  if (existsSync3(targetDir)) {
+  if (existsSync2(targetDir)) {
     const overwrite = await ye({
       message: `Directory "${appName}" already exists. Continue anyway?`,
       initialValue: false
@@ -6735,37 +6772,52 @@ async function main() {
     apiSource,
     apiPort,
     portalPort,
-    backofficePort
+    backofficePort,
+    packageManager: pm,
+    packageManagerVersion,
+    moonVersion
   };
-  const spinner = Y2();
-  spinner.start("Scaffolding your project...");
+  const scaffoldSpinner = Y2();
+  scaffoldSpinner.start("Scaffolding your project...");
   try {
     mkdirSync3(targetDir, { recursive: true });
     copyTemplateDir(join6(TEMPLATES_DIR5, "base"), targetDir, data);
-    if (isFullOrApi) {
+    if (isFullOrApi)
       generateApi(targetDir, data);
-    }
-    if (isFullOrPortal) {
+    if (isFullOrPortal)
       generatePortal(targetDir, data);
-    }
-    if (isFullOrBackoffice) {
+    if (isFullOrBackoffice)
       generateBackoffice(targetDir, data);
-    }
     generateDocker(targetDir, data);
-    spinner.stop("Project scaffolded successfully!");
+    if (initGit) {
+      execSync("git init", { cwd: targetDir, stdio: "pipe" });
+      execSync("git add .", { cwd: targetDir, stdio: "pipe" });
+    }
+    scaffoldSpinner.stop("Project scaffolded!");
   } catch (err) {
-    spinner.stop("Failed to scaffold project.");
+    scaffoldSpinner.stop("Failed to scaffold project.");
     console.error(err);
     process.exit(1);
+  }
+  const installSpinner = Y2();
+  installSpinner.start(`Installing dependencies with ${pm}...`);
+  const installResult = spawnSync(pm, ["install"], {
+    cwd: targetDir,
+    stdio: "pipe",
+    shell: true
+  });
+  if (installResult.status === 0) {
+    installSpinner.stop("Dependencies installed!");
+  } else {
+    installSpinner.stop(`Install failed — run '${pm} install' manually inside ./${appName}`);
   }
   Se([
     `Done! Your project is ready at ./${appName}`,
     "",
     "Next steps:",
     `  cd ${appName}`,
-    "  bun install",
     "  # Copy and fill in your .env files",
-    "  bun dev"
+    `  ${pm} dev`
   ].join(`
 `));
 }

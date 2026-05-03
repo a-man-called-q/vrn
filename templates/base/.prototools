@@ -1,1 +1,4 @@
-moon = "2.1.4"
+moon = "{{moonVersion}}"
+{{#if (eq packageManager "bun")}}
+bun = "{{packageManagerVersion}}"
+{{/if}}

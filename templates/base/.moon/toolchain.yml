@@ -1,8 +1,28 @@
 $schema: 'https://moonrepo.dev/schemas/toolchain.json'
 
+{{#if (eq packageManager "bun")}}
 bun:
-  version: '1.3.10'
+  version: '{{packageManagerVersion}}'
 
 node:
   version: '24.14.0'
   packageManager: 'bun'
+{{else if (eq packageManager "pnpm")}}
+pnpm:
+  version: '{{packageManagerVersion}}'
+
+node:
+  version: '24.14.0'
+  packageManager: 'pnpm'
+{{else if (eq packageManager "yarn")}}
+yarn:
+  version: '{{packageManagerVersion}}'
+
+node:
+  version: '24.14.0'
+  packageManager: 'yarn'
+{{else}}
+node:
+  version: '24.14.0'
+  packageManager: 'npm'
+{{/if}}

@@ -2,16 +2,16 @@ FROM oven/bun:1-alpine AS builder
 WORKDIR /workspace
 
 COPY package.json bun.lock ./
-COPY apps/api-{{dashCase name}}/package.json ./apps/api-{{dashCase name}}/
+COPY apps/{{dashCase name}}-service/package.json ./apps/{{dashCase name}}-service/
 RUN bun install
 
-COPY apps/api-{{dashCase name}}/src ./apps/api-{{dashCase name}}/src
+COPY apps/{{dashCase name}}-service/src ./apps/{{dashCase name}}-service/src
 
-WORKDIR /workspace/apps/api-{{dashCase name}}
+WORKDIR /workspace/apps/{{dashCase name}}-service
 RUN bun build src/index.ts --outdir .output --target bun
 
 FROM oven/bun:1-alpine
 WORKDIR /app
-COPY --from=builder /workspace/apps/api-{{dashCase name}}/.output ./
+COPY --from=builder /workspace/apps/{{dashCase name}}-service/.output ./
 EXPOSE {{apiPort}}
 CMD ["bun", "run", "index.js"]

@@ -1,4 +1,4 @@
-import { createApiClient } from "@workspace/api-client-{{dashCase name}}"
+import { createApiClient } from "@workspace/{{dashCase name}}-service-client"
 
 const api = createApiClient(process.env.API_URL!)
 

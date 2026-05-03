@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { copyTemplateDir, copyTemplateFile } from "../utils/template.js"
 
-const TEMPLATES_DIR = new URL("../../templates", import.meta.url).pathname
+const TEMPLATES_DIR = new URL("../templates", import.meta.url).pathname
 
 export interface PortalGeneratorData {
   name: string

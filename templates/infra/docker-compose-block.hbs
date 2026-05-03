@@ -20,10 +20,10 @@
       retries: 10
       start_period: 20s
 
-  api-{{dashCase name}}:
+  {{dashCase name}}-service:
     build:
       context: ../
-      dockerfile: apps/api-{{dashCase name}}/Dockerfile
+      dockerfile: apps/{{dashCase name}}-service/Dockerfile
     restart: unless-stopped
     networks:
       - proxy
@@ -35,7 +35,7 @@
       ZITADEL_CLIENT_ID: ${API_{{constantCase name}}_ZITADEL_CLIENT_ID:-}
 {{else}}
       BETTER_AUTH_SECRET: ${APP_{{constantCase name}}_BETTER_AUTH_SECRET:?required}
-      BETTER_AUTH_URL: ${API_{{constantCase name}}_URL:-http://api-{{dashCase name}}.localhost}
+      BETTER_AUTH_URL: ${API_{{constantCase name}}_URL:-http://{{dashCase name}}-service.localhost}
 {{/if}}
       ALLOWED_ORIGINS: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost},${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}
     depends_on:
@@ -56,14 +56,14 @@
     networks:
       - proxy
     environment:
-      API_URL: http://api-{{dashCase apiSource}}:{{apiPort}}
+      API_URL: http://{{dashCase apiSource}}-service:{{apiPort}}
       SESSION_SECRET: ${BACKOFFICE_{{constantCase name}}_SESSION_SECRET:-}
 {{#if (eq authProvider "zitadel")}}
       ZITADEL_PUBLIC_URL: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
       REDIRECT_URI: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost}/auth/callback
 {{/if}}
     depends_on:
-      api-{{dashCase apiSource}}:
+      {{dashCase apiSource}}-service:
         condition: service_healthy
 {{/if}}
 
@@ -76,13 +76,13 @@
     networks:
       - proxy
     environment:
-      API_URL: http://api-{{dashCase apiSource}}:{{apiPort}}
+      API_URL: http://{{dashCase apiSource}}-service:{{apiPort}}
       DATABASE_URL: postgres://${APP_{{constantCase apiSource}}_DB_USER:-postgres}:${APP_{{constantCase apiSource}}_DB_PASSWORD}@db-{{dashCase apiSource}}:5432/${APP_{{constantCase apiSource}}_DB_NAME:-db_{{snakeCase apiSource}}{{cb}}
       SESSION_SECRET: ${PORTAL_{{constantCase name}}_SESSION_SECRET:-}
 {{#if (eq authProvider "zitadel")}}
       REDIRECT_URI: ${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}/auth/callback
 {{/if}}
     depends_on:
-      api-{{dashCase apiSource}}:
+      {{dashCase apiSource}}-service:
         condition: service_healthy
 {{/if}}

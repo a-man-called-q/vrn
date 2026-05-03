@@ -1,0 +1,9 @@
+
+networks:
+  proxy:
+    name: proxy
+{{#if (eq authProvider "zitadel")}}
+
+volumes:
+  zitadel-bootstrap:
+{{/if}}

@@ -10,7 +10,7 @@
     "declaration": true,
     "declarationMap": true,
     "paths": {
-      "api/*": ["../../apps/api-{{dashCase name}}/src/*"]
+      "api/*": ["../../apps/{{dashCase name}}-service/src/*"]
     }
   },
   "include": ["src"]

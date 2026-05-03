@@ -4,16 +4,16 @@ WORKDIR /workspace
 # Install workspace deps (monorepo-aware)
 COPY package.json bun.lock ./
 COPY packages/ui/package.json ./packages/ui/
-COPY packages/api-client-{{dashCase name}}/package.json ./packages/api-client-{{dashCase name}}/
-COPY apps/api-{{dashCase name}}/package.json ./apps/api-{{dashCase name}}/
+COPY packages/{{dashCase name}}-service-client/package.json ./packages/{{dashCase name}}-service-client/
+COPY apps/{{dashCase name}}-service/package.json ./apps/{{dashCase name}}-service/
 COPY apps/backoffice-{{dashCase name}}/package.json ./apps/backoffice-{{dashCase name}}/
 RUN bun install
 
 # Copy source
 COPY packages/ui/ ./packages/ui/
-COPY packages/api-client-{{dashCase name}}/ ./packages/api-client-{{dashCase name}}/
-COPY apps/api-{{dashCase name}}/src/ ./apps/api-{{dashCase name}}/src/
-COPY apps/api-{{dashCase name}}/tsconfig.json ./apps/api-{{dashCase name}}/
+COPY packages/{{dashCase name}}-service-client/ ./packages/{{dashCase name}}-service-client/
+COPY apps/{{dashCase name}}-service/src/ ./apps/{{dashCase name}}-service/src/
+COPY apps/{{dashCase name}}-service/tsconfig.json ./apps/{{dashCase name}}-service/
 COPY apps/backoffice-{{dashCase name}}/ ./apps/backoffice-{{dashCase name}}/
 
 # Build

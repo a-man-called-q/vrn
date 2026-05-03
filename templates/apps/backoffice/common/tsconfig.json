@@ -20,8 +20,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@workspace/ui/*": ["../../packages/ui/src/*"],
-      "@workspace/api-client-{{dashCase apiSource}}": ["../../packages/api-client-{{dashCase apiSource}}/src/index.ts"],
-      "api/*": ["../../apps/api-{{dashCase apiSource}}/src/*"]
+      "@workspace/{{dashCase apiSource}}-service-client": ["../../packages/{{dashCase apiSource}}-service-client/src/index.ts"],
+      "api/*": ["../../apps/{{dashCase apiSource}}-service/src/*"]
     }
   }
 }

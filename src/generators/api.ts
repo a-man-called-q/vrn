@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { copyTemplateDir } from "../utils/template.js"
 
-const TEMPLATES_DIR = new URL("../../templates", import.meta.url).pathname
+const TEMPLATES_DIR = new URL("../templates", import.meta.url).pathname
 
 export interface ApiGeneratorData {
   name: string
@@ -13,8 +13,8 @@ export interface ApiGeneratorData {
 /**
  * Generate the API backend:
  * - packages/db-{name}/
- * - packages/api-client-{name}/
- * - apps/api-{name}/
+ * - packages/{name}-service-client/
+ * - apps/{name}-service/
  */
 export function generateApi(targetDir: string, data: ApiGeneratorData): void {
   const { name, authProvider } = data
@@ -31,22 +31,22 @@ export function generateApi(targetDir: string, data: ApiGeneratorData): void {
     data
   )
 
-  // packages/api-client
+  // packages/service-client
   copyTemplateDir(
     join(TEMPLATES_DIR, "packages/api-client"),
-    join(targetDir, `packages/api-client-${name}`),
+    join(targetDir, `packages/${name}-service-client`),
     data
   )
 
-  // apps/api
+  // apps/service
   copyTemplateDir(
     join(TEMPLATES_DIR, "apps/api/common"),
-    join(targetDir, `apps/api-${name}`),
+    join(targetDir, `apps/${name}-service`),
     data
   )
   copyTemplateDir(
     join(TEMPLATES_DIR, `apps/api/${authProvider}`),
-    join(targetDir, `apps/api-${name}`),
+    join(targetDir, `apps/${name}-service`),
     data
   )
 }

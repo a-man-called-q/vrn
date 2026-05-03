@@ -15,7 +15,7 @@
     "@tanstack/react-start": "^1.132.0",
     "jose": "^5.10.0",
     "@tanstack/router-plugin": "^1.132.0",
-    "@workspace/api-client-{{dashCase apiSource}}": "workspace:*",
+    "@workspace/{{dashCase apiSource}}-service-client": "workspace:*",
     "@workspace/ui": "workspace:*",
     "lucide-react": "^1.7.0",
     "nitro": "latest",

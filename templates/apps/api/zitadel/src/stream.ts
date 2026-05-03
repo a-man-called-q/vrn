@@ -3,7 +3,7 @@ import { db, users } from '@workspace/db-{{dashCase name}}';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379/1';
 const streamKey = 'str:zitadel:events';
-const consumerGroup = 'group:api-{{dashCase name}}';
+const consumerGroup = 'group:{{dashCase name}}-service';
 const consumerName = `consumer:${Math.random().toString(36).substring(7)}`;
 
 // We export a singleton redis client for publishing (e.g. from Platform API)
