@@ -1,0 +1,22 @@
+{
+  "name": "create-vrn",
+  "version": "0.0.1",
+  "type": "module",
+  "bin": {
+    "create-vrn": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "dev": "bun src/index.ts",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.10.1",
+    "change-case": "^5.4.4",
+    "handlebars": "^4.7.8"
+  },
+  "devDependencies": {
+    "@types/handlebars": "^4.1.0",
+    "typescript": "^5.9.3"
+  }
+}

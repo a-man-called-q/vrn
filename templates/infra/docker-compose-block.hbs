@@ -1,0 +1,88 @@
+
+  # ─── APPLICATION {{upperCase name}} ─────────────────────────────────────────────────
+
+{{#if (includes genType "API")}}
+  db-{{dashCase name}}:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      POSTGRES_USER: ${APP_{{constantCase name}}_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${APP_{{constantCase name}}_DB_PASSWORD:?required}
+      POSTGRES_DB: ${APP_{{constantCase name}}_DB_NAME:-db_{{snakeCase name}}{{cb}}
+    volumes:
+      - ./db-{{dashCase name}}-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${APP_{{constantCase name}}_DB_NAME:-db_{{snakeCase name}}{{cb}} -U ${APP_{{constantCase name}}_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 20s
+
+  api-{{dashCase name}}:
+    build:
+      context: ../
+      dockerfile: apps/api-{{dashCase name}}/Dockerfile
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      PORT: {{apiPort}}
+{{#if (eq authProvider "zitadel")}}
+      ZITADEL_ISSUER: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
+      ZITADEL_INTERNAL_URL: http://zitadel-api:8080
+      ZITADEL_CLIENT_ID: ${API_{{constantCase name}}_ZITADEL_CLIENT_ID:-}
+{{else}}
+      BETTER_AUTH_SECRET: ${APP_{{constantCase name}}_BETTER_AUTH_SECRET:?required}
+      BETTER_AUTH_URL: ${API_{{constantCase name}}_URL:-http://api-{{dashCase name}}.localhost}
+{{/if}}
+      ALLOWED_ORIGINS: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost},${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}
+    depends_on:
+      db-{{dashCase name}}:
+        condition: service_healthy
+{{#if (eq authProvider "zitadel")}}
+      zitadel-api:
+        condition: service_healthy
+{{/if}}
+{{/if}}
+
+{{#if (includes genType "Backoffice")}}
+  backoffice-{{dashCase name}}:
+    build:
+      context: ../
+      dockerfile: apps/backoffice-{{dashCase name}}/Dockerfile
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      API_URL: http://api-{{dashCase apiSource}}:{{apiPort}}
+      SESSION_SECRET: ${BACKOFFICE_{{constantCase name}}_SESSION_SECRET:-}
+{{#if (eq authProvider "zitadel")}}
+      ZITADEL_PUBLIC_URL: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
+      REDIRECT_URI: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost}/auth/callback
+{{/if}}
+    depends_on:
+      api-{{dashCase apiSource}}:
+        condition: service_healthy
+{{/if}}
+
+{{#if (includes genType "Portal")}}
+  portal-{{dashCase name}}:
+    build:
+      context: ../
+      dockerfile: apps/portal-{{dashCase name}}/Dockerfile
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      API_URL: http://api-{{dashCase apiSource}}:{{apiPort}}
+      DATABASE_URL: postgres://${APP_{{constantCase apiSource}}_DB_USER:-postgres}:${APP_{{constantCase apiSource}}_DB_PASSWORD}@db-{{dashCase apiSource}}:5432/${APP_{{constantCase apiSource}}_DB_NAME:-db_{{snakeCase apiSource}}{{cb}}
+      SESSION_SECRET: ${PORTAL_{{constantCase name}}_SESSION_SECRET:-}
+{{#if (eq authProvider "zitadel")}}
+      REDIRECT_URI: ${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}/auth/callback
+{{/if}}
+    depends_on:
+      api-{{dashCase apiSource}}:
+        condition: service_healthy
+{{/if}}

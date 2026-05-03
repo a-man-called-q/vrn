@@ -1,0 +1,19 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+id: root
+
+tasks:
+  build:
+    command: 'moon run :build'
+
+  dev:
+    command: 'moon run :dev'
+
+  lint:
+    command: 'moon run :lint'
+
+  format:
+    command: 'moon run :format'
+
+  typecheck:
+    command: 'moon run :typecheck'

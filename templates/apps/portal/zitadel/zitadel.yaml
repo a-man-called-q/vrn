@@ -1,0 +1,12 @@
+# ZITADEL app registration config for the portal app.
+# Used by the smart infra seeder (infra/seed/index.ts)
+# It scans all apps/*/zitadel.yaml files.
+
+name: portal-{{dashCase name}}
+displayName: {{titleCase name}} Portal
+appType: OIDC_APP_TYPE_WEB
+devMode: true
+redirectUris:
+  - "${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}/auth/callback"
+postLogoutRedirectUris:
+  - "${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}/"

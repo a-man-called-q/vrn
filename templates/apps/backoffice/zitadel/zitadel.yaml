@@ -1,0 +1,12 @@
+# ZITADEL app registration config for the backoffice app.
+# Used by the smart infra seeder (infra/seed/index.ts)
+# It scans all apps/*/zitadel.yaml files.
+
+name: backoffice-{{dashCase name}}
+displayName: {{titleCase name}} Backoffice
+appType: OIDC_APP_TYPE_WEB
+devMode: true
+redirectUris:
+  - "${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost}/auth/callback"
+postLogoutRedirectUris:
+  - "${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost}/"

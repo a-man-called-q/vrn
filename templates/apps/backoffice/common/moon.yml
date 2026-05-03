@@ -1,0 +1,36 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'typescript'
+toolchains:
+  node: {}
+  bun: {}
+
+tasks:
+  dev:
+    command: 'bun vite dev --port {{backofficePort}}'
+    options:
+      persistent: true
+      cache: false
+
+  build:
+    command: 'bun vite build'
+    inputs:
+      - 'src/**/*'
+      - '.env*'
+    outputs:
+      - '.output/**'
+
+  lint:
+    command: 'bun biome lint .'
+    inputs:
+      - 'src/**/*'
+      - '/biome.json'
+
+  format:
+    command: 'bun biome format --write .'
+    inputs:
+      - 'src/**/*'
+      - '/biome.json'
+
+  typecheck:
+    command: 'bun tsc --noEmit'

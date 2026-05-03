@@ -1,0 +1,23 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'typescript'
+toolchains:
+  bun: {}
+
+tasks:
+  dev:
+    command: 'bun run --watch src/index.ts'
+    options:
+      persistent: true
+      cache: false
+
+  build:
+    command: 'bun build src/index.ts --outdir dist'
+    inputs:
+      - 'src/**/*'
+      - '.env*'
+    outputs:
+      - 'dist/**'
+
+  typecheck:
+    command: 'bun tsc --noEmit'

@@ -1,0 +1,25 @@
+{
+  "name": "{{dashCase name}}",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "moon run :build",
+    "dev": "moon run :dev",
+    "lint": "moon run :lint",
+    "format": "moon run :format",
+    "typecheck": "moon run :typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.0",
+    "typescript": "5.9.3"
+  },
+  "type": "module",
+  "packageManager": "bun@1.3.10",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
