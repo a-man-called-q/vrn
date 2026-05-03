@@ -36,6 +36,3 @@ npm-debug.log*
 .DS_Store
 *.pem
 *.gen.ts
-
-node_modules
-dist
