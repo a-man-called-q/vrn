@@ -15,7 +15,7 @@ import {
   askText,
   askRequiredText,
 } from "./utils/cli.js"
-import { GenType, PackageManager, ScaffoldData } from "./types.js"
+import { GenType, PackageManager, ScaffoldData, ServiceFramework } from "./types.js"
 
 const TEMPLATES_DIR = new URL("../templates", import.meta.url).pathname
 
@@ -48,11 +48,29 @@ async function main() {
   })
   if (p.isCancel(name)) { p.cancel("Cancelled."); process.exit(0) }
 
+  const isFullOrApi = genType === "full" || genType === "service"
+
+  const serviceFramework: ServiceFramework = isFullOrApi
+    ? (await p.select<ServiceFramework>({
+        message: "Service framework",
+        options: [
+          { value: "elysia", label: "Elysia (TypeScript, Bun-native)" },
+          { value: "litestar", label: "Litestar (Python, uv)" },
+        ],
+      }) as ServiceFramework)
+    : "elysia"
+  if (p.isCancel(serviceFramework)) { p.cancel("Cancelled."); process.exit(0) }
+
   const authProvider = await p.select<"zitadel" | "better-auth">({
     message: "Auth provider",
     options: [
       { value: "zitadel", label: "Zitadel (OIDC, enterprise-grade)" },
-      { value: "better-auth", label: "Better Auth (email/password, self-hosted)" },
+      {
+        value: "better-auth",
+        label: serviceFramework === "litestar"
+          ? "Authlib (email/password, self-hosted)"
+          : "Better Auth (email/password, self-hosted)",
+      },
     ],
   })
   if (p.isCancel(authProvider)) { p.cancel("Cancelled."); process.exit(0) }
@@ -72,7 +90,6 @@ async function main() {
 
   const packageManagerVersion = detectPmVersion(pm)
 
-  const isFullOrApi = genType === "full" || genType === "service"
   const isFullOrPortal = genType === "full" || genType === "portal"
   const isFullOrBackoffice = genType === "full" || genType === "backoffice"
 
@@ -125,6 +142,7 @@ async function main() {
   const data: ScaffoldData = {
     name: appName,
     authProvider,
+    serviceFramework,
     genType,
     apiSource,
     apiPort,

@@ -1,0 +1,21 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'python'
+toolchains:
+  uv: {}
+
+tasks:
+  dev:
+    command: 'uv run uvicorn src.main:app --reload --host 0.0.0.0 --port {{apiPort}}'
+    options:
+      persistent: true
+      cache: false
+
+  migrate:
+    command: 'uv run aerich upgrade'
+
+  migrate-init:
+    command: 'uv run aerich init-db'
+
+  typecheck:
+    command: 'uv run mypy src --ignore-missing-imports'

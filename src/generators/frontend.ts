@@ -20,16 +20,8 @@ export function generateFrontend(
   const { name, authProvider } = data
   const destDir = join(targetDir, `apps/${config.prefix}-${name}`)
 
-  // Common files
   copyTemplateDir(
-    join(templatesDir, `apps/${config.kind}/common`),
-    destDir,
-    data
-  )
-
-  // Auth-provider-specific files
-  copyTemplateDir(
-    join(templatesDir, `apps/${config.kind}/${authProvider}`),
+    join(templatesDir, `apps/${config.kind}`),
     destDir,
     data
   )

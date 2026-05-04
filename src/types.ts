@@ -8,9 +8,12 @@ export type GenType =
 
 export type AuthProvider = "zitadel" | "better-auth"
 
+export type ServiceFramework = "elysia" | "litestar"
+
 export interface ScaffoldData {
   name: string
   authProvider: AuthProvider
+  serviceFramework: ServiceFramework
   genType: GenType
   apiSource: string
   apiPort: string

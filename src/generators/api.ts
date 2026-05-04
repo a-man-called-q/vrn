@@ -13,36 +13,34 @@ export function generateApi(
   templatesDir: string,
   data: ScaffoldData
 ): void {
-  const { name, authProvider } = data
+  const { name, authProvider, serviceFramework } = data
 
-  // packages/db
-  copyTemplateDir(
-    join(templatesDir, "packages/db/common"),
-    join(targetDir, `packages/db-${name}`),
-    data
-  )
-  copyTemplateDir(
-    join(templatesDir, `packages/db/${authProvider}`),
-    join(targetDir, `packages/db-${name}`),
-    data
-  )
-
-  // packages/service-client
-  copyTemplateDir(
-    join(templatesDir, "packages/api-client"),
-    join(targetDir, `packages/${name}-service-client`),
-    data
-  )
-
-  // apps/service
-  copyTemplateDir(
-    join(templatesDir, "apps/api/common"),
-    join(targetDir, `apps/${name}-service`),
-    data
-  )
-  copyTemplateDir(
-    join(templatesDir, `apps/api/${authProvider}`),
-    join(targetDir, `apps/${name}-service`),
-    data
-  )
+  if (serviceFramework === "litestar") {
+    copyTemplateDir(
+      join(templatesDir, "apps/api-python"),
+      join(targetDir, `apps/${name}-service`),
+      data
+    )
+    copyTemplateDir(
+      join(templatesDir, "packages/api-client-litestar"),
+      join(targetDir, `packages/${name}-service-client`),
+      data
+    )
+  } else {
+    copyTemplateDir(
+      join(templatesDir, "packages/db"),
+      join(targetDir, `packages/db-${name}`),
+      data
+    )
+    copyTemplateDir(
+      join(templatesDir, "packages/api-client"),
+      join(targetDir, `packages/${name}-service-client`),
+      data
+    )
+    copyTemplateDir(
+      join(templatesDir, "apps/api"),
+      join(targetDir, `apps/${name}-service`),
+      data
+    )
+  }
 }
