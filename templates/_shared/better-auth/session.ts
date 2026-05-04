@@ -24,6 +24,10 @@ export interface Session {
 }
 
 export async function setSession(session: Session): Promise<void> {
+  // NOTE: The full session (including the auth token) is signed and stored in
+  // a httpOnly cookie. The payload is base64-encoded but NOT encrypted — anyone
+  // who obtains the raw cookie value can decode it. For higher security,
+  // store the token server-side (e.g. Redis) and keep only a session ID here.
   const jwt = await new SignJWT({ ...session })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()

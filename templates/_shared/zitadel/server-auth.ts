@@ -34,7 +34,13 @@ export const loginFn = createServerFn().handler(async () => {
 })
 
 export const callbackFn = createServerFn()
-  .inputValidator((data: unknown) => data as { code: string; state: string })
+  .inputValidator((data: unknown) => {
+    const d = data as Record<string, unknown>
+    if (typeof d?.code !== "string" || typeof d?.state !== "string") {
+      throw new Error("Invalid callback parameters")
+    }
+    return { code: d.code, state: d.state }
+  })
   .handler(async ({ data }) => {
     const storedState = getCookie("oauth_state")
     const codeVerifier = getCookie("code_verifier")

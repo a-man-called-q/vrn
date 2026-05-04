@@ -11,7 +11,13 @@ export const getSessionFn = createServerFn().handler(
 )
 
 export const loginFn = createServerFn()
-  .inputValidator((data: unknown) => data as { email: string; password: string })
+  .inputValidator((data: unknown) => {
+    const d = data as Record<string, unknown>
+    if (typeof d?.email !== "string" || typeof d?.password !== "string") {
+      throw new Error("Invalid login parameters")
+    }
+    return { email: d.email, password: d.password }
+  })
   .handler(async ({ data }) => {
     const res = await fetch(`${API_URL}/api/auth/sign-in/email`, {
       method: "POST",

@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia"
 import { cors } from "@elysiajs/cors"
 import { setupConsumer, redis } from "./stream"
+import { createHmac, timingSafeEqual } from "node:crypto"
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
   .split(",")
@@ -21,12 +22,23 @@ const app = new Elysia()
   .get("/", () => "Hello from {{titleCase name}} API")
 
   // Zitadel Webhook Broadcaster Endpoint
-  .post("/webhooks/zitadel", async ({ body }) => {
-    const { zitadelId, email, name } = body as any;
-
-    if (!zitadelId || !email) {
-      return new Response("Missing required identity fields", { status: 400 });
+  .post("/webhooks/zitadel", async ({ body, headers }) => {
+    // Verify HMAC-SHA256 signature from Zitadel
+    const secret = process.env.ZITADEL_WEBHOOK_SECRET
+    const signature = headers["x-zitadel-signature"]
+    if (!secret || !signature) {
+      return new Response("Unauthorized", { status: 401 })
     }
+    const expected = createHmac("sha256", secret)
+      .update(JSON.stringify(body))
+      .digest("hex")
+    const expectedBuf = Buffer.from(expected)
+    const signatureBuf = Buffer.from(signature)
+    if (expectedBuf.length !== signatureBuf.length || !timingSafeEqual(expectedBuf, signatureBuf)) {
+      return new Response("Unauthorized", { status: 401 })
+    }
+
+    const { zitadelId, email, name } = body
 
     await redis.xadd(
       'str:zitadel:events', '*',
@@ -35,6 +47,12 @@ const app = new Elysia()
     );
 
     return { success: true, message: "Identity event broadcasted" };
+  }, {
+    body: t.Object({
+      zitadelId: t.String(),
+      email: t.String({ format: "email" }),
+      name: t.Optional(t.String()),
+    })
   })
 
 export type App = typeof app

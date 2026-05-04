@@ -6,12 +6,15 @@ import {
   readdirSync,
   statSync,
   existsSync,
+  copyFileSync,
 } from "node:fs"
-import { join, dirname } from "node:path"
+import { join, dirname, extname } from "node:path"
 import { registerHelpers } from "./helpers.js"
 
 // Register all helpers once at import time
 registerHelpers()
+
+const BINARY_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".ico", ".woff", ".woff2", ".ttf", ".eot"])
 
 /**
  * Process a Handlebars template string with the provided data.
@@ -66,9 +69,13 @@ export function copyTemplateDir(
       copyTemplateDir(srcPath, destPath, data, false)
     } else {
       mkdirSync(dirname(destPath), { recursive: true })
-      const content = readFileSync(srcPath, "utf-8")
-      const rendered = processTemplate(content, data)
-      writeFileSync(destPath, rendered, "utf-8")
+      if (BINARY_EXTENSIONS.has(extname(srcPath).toLowerCase())) {
+        copyFileSync(srcPath, destPath)
+      } else {
+        const content = readFileSync(srcPath, "utf-8")
+        const rendered = processTemplate(content, data)
+        writeFileSync(destPath, rendered, "utf-8")
+      }
     }
   }
 }

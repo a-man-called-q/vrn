@@ -1,7 +1,7 @@
 
   # ─── APPLICATION {{upperCase name}} ─────────────────────────────────────────────────
 
-{{#if (includes genType "API")}}
+{{#if isApi}}
   db-{{dashCase name}}:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -33,6 +33,7 @@
       ZITADEL_ISSUER: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
       ZITADEL_INTERNAL_URL: http://zitadel-api:8080
       ZITADEL_CLIENT_ID: ${API_{{constantCase name}}_ZITADEL_CLIENT_ID:-}
+      ZITADEL_WEBHOOK_SECRET: ${API_{{constantCase name}}_ZITADEL_WEBHOOK_SECRET:?required}
 {{else}}
       BETTER_AUTH_SECRET: ${APP_{{constantCase name}}_BETTER_AUTH_SECRET:?required}
       BETTER_AUTH_URL: ${API_{{constantCase name}}_URL:-http://{{dashCase name}}-service.localhost}
@@ -47,7 +48,7 @@
 {{/if}}
 {{/if}}
 
-{{#if (includes genType "Backoffice")}}
+{{#if isBackoffice}}
   backoffice-{{dashCase name}}:
     build:
       context: ../
@@ -67,7 +68,7 @@
         condition: service_healthy
 {{/if}}
 
-{{#if (includes genType "Portal")}}
+{{#if isPortal}}
   portal-{{dashCase name}}:
     build:
       context: ../

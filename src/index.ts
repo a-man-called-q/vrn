@@ -8,54 +8,16 @@ import { generatePortal } from "./generators/portal.js"
 import { generateBackoffice } from "./generators/backoffice.js"
 import { generateDocker } from "./generators/docker.js"
 import { copyTemplateDir } from "./utils/template.js"
+import {
+  detectPmVersion,
+  detectMoonVersion,
+  fetchLatestMoonVersion,
+  askText,
+  askRequiredText,
+} from "./utils/cli.js"
+import { GenType, PackageManager, ScaffoldData } from "./types.js"
 
 const TEMPLATES_DIR = new URL("../templates", import.meta.url).pathname
-
-type GenType =
-  | "Full Application Suite (API + DB + Portal + Backoffice)"
-  | "API Backend Only (+ DB + Client)"
-  | "Portal Only (Frontend)"
-  | "Backoffice Only (Admin)"
-
-type PackageManager = "bun" | "npm" | "pnpm" | "yarn"
-
-function detectPmVersion(pm: PackageManager): string {
-  const defaults: Record<PackageManager, string> = {
-    bun: "1.3.10",
-    npm: "10.9.2",
-    pnpm: "10.0.0",
-    yarn: "4.6.0",
-  }
-  try {
-    const raw = execSync(`${pm} --version`, { stdio: "pipe", timeout: 3000 }).toString().trim()
-    const match = raw.match(/\d+\.\d+\.\d+/)
-    return match ? match[0] : defaults[pm]
-  } catch {
-    return defaults[pm]
-  }
-}
-
-function detectMoonVersion(): string | null {
-  try {
-    const raw = execSync("moon --version", { stdio: "pipe", timeout: 3000 }).toString().trim()
-    const match = raw.match(/\d+\.\d+\.\d+/)
-    return match ? match[0] : null
-  } catch {
-    return null
-  }
-}
-
-async function fetchLatestMoonVersion(): Promise<string> {
-  try {
-    const res = await fetch("https://api.github.com/repos/moonrepo/moon/releases/latest", {
-      headers: { "User-Agent": "create-vrn" },
-    })
-    const json = (await res.json()) as { tag_name: string }
-    return json.tag_name.replace(/^v/, "")
-  } catch {
-    return "2.1.4"
-  }
-}
 
 async function main() {
   console.log()
@@ -67,10 +29,10 @@ async function main() {
   const genType = await p.select<GenType>({
     message: "What do you want to generate?",
     options: [
-      { value: "Full Application Suite (API + DB + Portal + Backoffice)", label: "Full Application Suite (API + DB + Portal + Backoffice)" },
-      { value: "API Backend Only (+ DB + Client)", label: "Service Backend Only (+ DB + Client)" },
-      { value: "Portal Only (Frontend)", label: "Portal Only (Frontend)" },
-      { value: "Backoffice Only (Admin)", label: "Backoffice Only (Admin)" },
+      { value: "full", label: "Full Application Suite (Service + DB + Portal + Backoffice)" },
+      { value: "service", label: "Service Backend Only (+ DB + Client)" },
+      { value: "portal", label: "Portal Only (Frontend)" },
+      { value: "backoffice", label: "Backoffice Only (Admin)" },
     ],
   })
   if (p.isCancel(genType)) { p.cancel("Cancelled."); process.exit(0) }
@@ -80,6 +42,8 @@ async function main() {
     placeholder: "my-app",
     validate(value) {
       if (!value || value.trim() === "") return "Application name is required."
+      if (!/^[a-z][a-z0-9-]*$/.test(value)) return "Name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens."
+      if (value.length > 64) return "Name must be 64 characters or less."
     },
   })
   if (p.isCancel(name)) { p.cancel("Cancelled."); process.exit(0) }
@@ -104,55 +68,24 @@ async function main() {
   })
   if (p.isCancel(packageManager)) { p.cancel("Cancelled."); process.exit(0) }
 
-  const pm = packageManager as PackageManager
+  const pm = packageManager
+
   const packageManagerVersion = detectPmVersion(pm)
 
-  const isFullOrApi =
-    genType === "Full Application Suite (API + DB + Portal + Backoffice)" ||
-    genType === "API Backend Only (+ DB + Client)"
-  const isFullOrPortal =
-    genType === "Full Application Suite (API + DB + Portal + Backoffice)" ||
-    genType === "Portal Only (Frontend)"
-  const isFullOrBackoffice =
-    genType === "Full Application Suite (API + DB + Portal + Backoffice)" ||
-    genType === "Backoffice Only (Admin)"
-  const isFull =
-    genType === "Full Application Suite (API + DB + Portal + Backoffice)"
+  const isFullOrApi = genType === "full" || genType === "service"
+  const isFullOrPortal = genType === "full" || genType === "portal"
+  const isFullOrBackoffice = genType === "full" || genType === "backoffice"
 
-  let apiPort = "4001"
-  let portalPort = "3001"
-  let backofficePort = "5175"
-  let apiSourceInput = ""
+  const apiPort = await askText("Service port", "4001", isFullOrApi)
+  const portalPort = await askText("Portal port", "3001", isFullOrPortal)
+  const backofficePort = await askText("Backoffice port", "5175", isFullOrBackoffice)
 
-  if (isFullOrApi) {
-    const v = await p.text({ message: "Service port", placeholder: "4001", initialValue: "4001" })
-    if (p.isCancel(v)) { p.cancel("Cancelled."); process.exit(0) }
-    apiPort = v || "4001"
-  }
-
-  if (isFullOrPortal) {
-    const v = await p.text({ message: "Portal port", placeholder: "3001", initialValue: "3001" })
-    if (p.isCancel(v)) { p.cancel("Cancelled."); process.exit(0) }
-    portalPort = v || "3001"
-  }
-
-  if (isFullOrBackoffice) {
-    const v = await p.text({ message: "Backoffice port", placeholder: "5175", initialValue: "5175" })
-    if (p.isCancel(v)) { p.cancel("Cancelled."); process.exit(0) }
-    backofficePort = v || "5175"
-  }
-
-  if (!isFull && !isFullOrApi && (isFullOrPortal || isFullOrBackoffice)) {
-    const v = await p.text({
-      message: "Which service name does this frontend connect to?",
-      placeholder: "my-app",
-      validate(value) {
-        if (!value || value.trim() === "") return "Service name is required."
-      },
-    })
-    if (p.isCancel(v)) { p.cancel("Cancelled."); process.exit(0) }
-    apiSourceInput = v
-  }
+  const apiSourceInput = await askRequiredText(
+    "Which service name does this frontend connect to?",
+    "my-app",
+    "Service name is required.",
+    !isFullOrApi && (isFullOrPortal || isFullOrBackoffice)
+  )
 
   const initGit = await p.confirm({ message: "Initialize a git repository?", initialValue: true })
   if (p.isCancel(initGit)) { p.cancel("Cancelled."); process.exit(0) }
@@ -176,8 +109,9 @@ async function main() {
     moonVersion = installedMoonVersion
   }
 
-  const apiSource = isFullOrApi ? (name as string) : apiSourceInput
-  const appName = name as string
+  const apiSource = isFullOrApi ? name : apiSourceInput
+  const appName = name
+
   const targetDir = resolve(process.cwd(), appName)
 
   if (existsSync(targetDir)) {
@@ -188,10 +122,10 @@ async function main() {
     if (p.isCancel(overwrite) || !overwrite) { p.cancel("Cancelled."); process.exit(0) }
   }
 
-  const data = {
+  const data: ScaffoldData = {
     name: appName,
-    authProvider: authProvider as string,
-    genType: genType as string,
+    authProvider,
+    genType,
     apiSource,
     apiPort,
     portalPort,
@@ -208,13 +142,13 @@ async function main() {
     mkdirSync(targetDir, { recursive: true })
     copyTemplateDir(join(TEMPLATES_DIR, "base"), targetDir, data)
 
-    if (isFullOrApi) generateApi(targetDir, data)
-    if (isFullOrPortal) generatePortal(targetDir, data)
-    if (isFullOrBackoffice) generateBackoffice(targetDir, data)
+    if (isFullOrApi) generateApi(targetDir, TEMPLATES_DIR, data)
+    if (isFullOrPortal) generatePortal(targetDir, TEMPLATES_DIR, data)
+    if (isFullOrBackoffice) generateBackoffice(targetDir, TEMPLATES_DIR, data)
 
-    generateDocker(targetDir, data)
+    generateDocker(targetDir, TEMPLATES_DIR, data)
 
-    if (initGit as boolean) {
+    if (initGit) {
       execSync("git init", { cwd: targetDir, stdio: "pipe" })
       execSync("git add .", { cwd: targetDir, stdio: "pipe" })
     }
