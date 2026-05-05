@@ -3,7 +3,7 @@ import { join, dirname } from "node:path"
 import yaml from "yaml"
 import { ProjectConfig } from "../types.js"
 
-const MANIFEST_FILE = ".vrn.yaml"
+const MANIFEST_FILE = "vrn.yaml"
 
 export function findProjectRoot(startDir: string = process.cwd()): string | null {
   let dir = startDir
