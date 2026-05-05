@@ -39,6 +39,12 @@
       BETTER_AUTH_URL: ${API_{{constantCase name}}_URL:-http://{{dashCase name}}-service.localhost}
 {{/if}}
       ALLOWED_ORIGINS: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost},${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{apiPort}}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
       db-{{dashCase name}}:
         condition: service_healthy
@@ -58,7 +64,7 @@
       - proxy
     environment:
       API_URL: http://{{dashCase apiSource}}-service:{{apiPort}}
-      SESSION_SECRET: ${BACKOFFICE_{{constantCase name}}_SESSION_SECRET:-}
+      SESSION_SECRET: ${BACKOFFICE_{{constantCase name}}_SESSION_SECRET:?required}
 {{#if (eq authProvider "zitadel")}}
       ZITADEL_PUBLIC_URL: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
       REDIRECT_URI: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost}/auth/callback
@@ -78,8 +84,7 @@
       - proxy
     environment:
       API_URL: http://{{dashCase apiSource}}-service:{{apiPort}}
-      DATABASE_URL: postgres://${APP_{{constantCase apiSource}}_DB_USER:-postgres}:${APP_{{constantCase apiSource}}_DB_PASSWORD}@db-{{dashCase apiSource}}:5432/${APP_{{constantCase apiSource}}_DB_NAME:-db_{{snakeCase apiSource}}{{cb}}
-      SESSION_SECRET: ${PORTAL_{{constantCase name}}_SESSION_SECRET:-}
+      SESSION_SECRET: ${PORTAL_{{constantCase name}}_SESSION_SECRET:?required}
 {{#if (eq authProvider "zitadel")}}
       REDIRECT_URI: ${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}/auth/callback
 {{/if}}

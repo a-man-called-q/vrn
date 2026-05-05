@@ -22,15 +22,17 @@ const app = new Elysia()
   .get("/", () => "Hello from {{titleCase name}} API")
 
   // Zitadel Webhook Broadcaster Endpoint
-  .post("/webhooks/zitadel", async ({ body, headers }) => {
+  .post("/webhooks/zitadel", async ({ request, headers }) => {
     // Verify HMAC-SHA256 signature from Zitadel
     const secret = process.env.ZITADEL_WEBHOOK_SECRET
     const signature = headers["x-zitadel-signature"]
     if (!secret || !signature) {
       return new Response("Unauthorized", { status: 401 })
     }
+
+    const rawBody = await request.text()
     const expected = createHmac("sha256", secret)
-      .update(JSON.stringify(body))
+      .update(rawBody)
       .digest("hex")
     const expectedBuf = Buffer.from(expected)
     const signatureBuf = Buffer.from(signature)
@@ -38,6 +40,7 @@ const app = new Elysia()
       return new Response("Unauthorized", { status: 401 })
     }
 
+    const body = JSON.parse(rawBody)
     const { zitadelId, email, name } = body
 
     await redis.xadd(
@@ -47,12 +50,6 @@ const app = new Elysia()
     );
 
     return { success: true, message: "Identity event broadcasted" };
-  }, {
-    body: t.Object({
-      zitadelId: t.String(),
-      email: t.String({ format: "email" }),
-      name: t.Optional(t.String()),
-    })
   })
 
 export type App = typeof app

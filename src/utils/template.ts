@@ -20,10 +20,19 @@ const BINARY_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".ico", ".woff", ".w
 // E.g. "[zitadel]schema.ts" is copied as "schema.ts" only when authProvider === "zitadel".
 const CONDITION_RE = /^\[([^\]]+)\]/
 
-function resolveCondition(name: string, data: object): { skip: boolean; outputName: string } {
+const VALID_CONDITIONS = new Set(["zitadel", "better-auth", "elysia", "litestar"])
+
+function resolveCondition(name: string, data: any): { skip: boolean; outputName: string } {
   const m = CONDITION_RE.exec(name)
   if (!m) return { skip: false, outputName: name }
-  const matches = Object.values(data).some(v => v === m[1])
+  const condition = m[1]
+  
+  if (VALID_CONDITIONS.has(condition)) {
+    const matches = data.authProvider === condition || data.serviceFramework === condition
+    return { skip: !matches, outputName: name.slice(m[0].length) }
+  }
+  
+  const matches = Object.values(data).some(v => v === condition)
   return { skip: !matches, outputName: name.slice(m[0].length) }
 }
 

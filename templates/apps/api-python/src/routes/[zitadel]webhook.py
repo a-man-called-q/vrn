@@ -17,7 +17,7 @@ class ZitadelWebhookPayload:
 
 
 @post("/webhooks/zitadel")
-async def zitadel_webhook(request: Request, data: ZitadelWebhookPayload) -> dict:
+async def zitadel_webhook(request: Request) -> dict:
     body = await request.body()
     signature = request.headers.get("x-zitadel-signature", "")
     expected = hmac.new(
@@ -25,6 +25,8 @@ async def zitadel_webhook(request: Request, data: ZitadelWebhookPayload) -> dict
     ).hexdigest()
     if not hmac.compare_digest(expected, signature):
         raise NotAuthorizedException()
+
+    data = ZitadelWebhookPayload(**json.loads(body))
 
     redis: Redis = request.app.state.redis
     await redis.xadd(

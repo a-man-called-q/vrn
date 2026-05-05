@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from "jose"
+import { EncryptJWT, jwtDecrypt } from "jose"
 import {
   getCookie,
   setCookie,
@@ -24,17 +24,15 @@ export interface Session {
 }
 
 export async function setSession(session: Session): Promise<void> {
-  // NOTE: The full session (including idToken) is signed and stored in a
-  // httpOnly cookie. The payload is base64-encoded but NOT encrypted — anyone
-  // who obtains the raw cookie value can decode it. For higher security,
-  // store the token server-side (e.g. Redis) and keep only a session ID here.
-  const token = await new SignJWT({ ...session })
-    .setProtectedHeader({ alg: "HS256" })
+  // NOTE: The full session (including idToken) is encrypted and stored in a
+  // httpOnly cookie.
+  const tokenStr = await new EncryptJWT({ ...session })
+    .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(getSecret())
+    .encrypt(getSecret())
 
-  setCookie(COOKIE_NAME, token, {
+  setCookie(COOKIE_NAME, tokenStr, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -48,7 +46,7 @@ export async function getSession(): Promise<Session | null> {
   if (!token) return null
 
   try {
-    const { payload } = await jwtVerify(token, getSecret())
+    const { payload } = await jwtDecrypt(token, getSecret())
     return payload as unknown as Session
   } catch {
     return null

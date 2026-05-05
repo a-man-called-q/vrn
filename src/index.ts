@@ -50,16 +50,17 @@ async function main() {
 
   const isFullOrApi = genType === "full" || genType === "service"
 
-  const serviceFramework: ServiceFramework = isFullOrApi
-    ? (await p.select<ServiceFramework>({
+  const serviceFrameworkResult = isFullOrApi
+    ? await p.select<ServiceFramework>({
         message: "Service framework",
         options: [
           { value: "elysia", label: "Elysia (TypeScript, Bun-native)" },
           { value: "litestar", label: "Litestar (Python, uv)" },
         ],
-      }) as ServiceFramework)
+      })
     : "elysia"
-  if (p.isCancel(serviceFramework)) { p.cancel("Cancelled."); process.exit(0) }
+  if (p.isCancel(serviceFrameworkResult)) { p.cancel("Cancelled."); process.exit(0) }
+  const serviceFramework = serviceFrameworkResult as ServiceFramework
 
   const authProvider = await p.select<"zitadel" | "better-auth">({
     message: "Auth provider",
@@ -97,6 +98,8 @@ async function main() {
   const portalPort = await askText("Portal port", "3001", isFullOrPortal)
   const backofficePort = await askText("Backoffice port", "5175", isFullOrBackoffice)
 
+  // Only ask for API source if we are NOT scaffolding the API in this run,
+  // but we ARE scaffolding a frontend that needs to connect to an API.
   const apiSourceInput = await askRequiredText(
     "Which service name does this frontend connect to?",
     "my-app",
@@ -111,6 +114,10 @@ async function main() {
   const latestMoonVersion = await latestMoonVersionPromise
   const installedMoonVersion = detectMoonVersion()
   let moonVersion = latestMoonVersion
+
+  if (latestMoonVersion === "2.1.4" && !installedMoonVersion) {
+    p.log.warn("Failed to fetch latest moon version, using fallback 2.1.4")
+  }
 
   if (installedMoonVersion && installedMoonVersion !== latestMoonVersion) {
     const choice = await p.select({

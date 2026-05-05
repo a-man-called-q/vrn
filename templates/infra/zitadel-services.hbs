@@ -46,13 +46,15 @@
   zitadel-setup:
     image: ghcr.io/zitadel/zitadel:${ZITADEL_VERSION:-latest}
     restart: "no"
-    command: setup --masterkey "${ZITADEL_MASTERKEY}"
+    command: setup
     networks:
       - proxy
     environment:
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:?required}
       ZITADEL_DATABASE_POSTGRES_DSN: postgresql://${ZITADEL_DB_USER:-postgres}:${ZITADEL_DB_PASSWORD}@zitadel-db:5432/zitadel?sslmode=disable
       ZITADEL_EXTERNALDOMAIN: ${ZITADEL_DOMAIN:-auth.localhost}
       ZITADEL_EXTERNALPORT: ${ZITADEL_EXTERNALPORT:-80}
+      # NOTE: Set EXTERNALSECURE and TLS_ENABLED to true in production!
       ZITADEL_EXTERNALSECURE: ${ZITADEL_EXTERNALSECURE:-false}
       ZITADEL_TLS_ENABLED: "false"
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
@@ -75,10 +77,11 @@
   zitadel-api:
     image: ghcr.io/zitadel/zitadel:${ZITADEL_VERSION:-latest}
     restart: unless-stopped
-    command: start --masterkey "${ZITADEL_MASTERKEY}"
+    command: start
     networks:
       - proxy
     environment:
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:?required}
       ZITADEL_PORT: 8080
       ZITADEL_DATABASE_POSTGRES_DSN: postgresql://${ZITADEL_DB_USER:-postgres}:${ZITADEL_DB_PASSWORD}@zitadel-db:5432/zitadel?sslmode=disable
       ZITADEL_EXTERNALDOMAIN: ${ZITADEL_DOMAIN:-auth.localhost}

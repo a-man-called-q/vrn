@@ -16,6 +16,7 @@ const app = new Elysia()
   )
   .get("/health", () => ({ status: "ok" }))
   .get("/", () => "Hello from {{titleCase name}} API")
+  // TODO: Implement rate limiting for authentication endpoints in production
   .all("/api/auth/*", ({ request }) => auth.handler(request))
 
 export type App = typeof app
