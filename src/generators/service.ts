@@ -1,19 +1,13 @@
 import { join } from "node:path"
 import { copyTemplateDir } from "../utils/template.js"
-import { ScaffoldData } from "../types.js"
+import { TemplateData } from "../types.js"
 
-/**
- * Generate the API backend:
- * - packages/db-{name}/
- * - packages/{name}-service-client/
- * - apps/{name}-service/
- */
-export function generateApi(
+export function generateService(
   targetDir: string,
   templatesDir: string,
-  data: ScaffoldData
+  data: TemplateData
 ): void {
-  const { name, authProvider, serviceFramework } = data
+  const { name, serviceFramework } = data
 
   if (serviceFramework === "litestar") {
     copyTemplateDir(

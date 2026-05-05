@@ -1,7 +1,8 @@
 
   # ─── APPLICATION {{upperCase name}} ─────────────────────────────────────────────────
 
-{{#if isApi}}
+{{#each services}}
+  # ─── SERVICE {{upperCase name}} ─────────────────────────────────────────────────
   db-{{dashCase name}}:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -28,8 +29,8 @@
     networks:
       - proxy
     environment:
-      PORT: {{apiPort}}
-{{#if (eq authProvider "zitadel")}}
+      PORT: {{port}}
+{{#if (eq ../authProvider "zitadel")}}
       ZITADEL_ISSUER: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
       ZITADEL_INTERNAL_URL: http://zitadel-api:8080
       ZITADEL_CLIENT_ID: ${API_{{constantCase name}}_ZITADEL_CLIENT_ID:-}
@@ -40,7 +41,7 @@
 {{/if}}
       ALLOWED_ORIGINS: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost},${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{{apiPort}}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:{{port}}/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,13 +49,15 @@
     depends_on:
       db-{{dashCase name}}:
         condition: service_healthy
-{{#if (eq authProvider "zitadel")}}
+{{#if (eq ../authProvider "zitadel")}}
       zitadel-api:
         condition: service_healthy
 {{/if}}
-{{/if}}
 
-{{#if isBackoffice}}
+{{/each}}
+
+{{#each backoffices}}
+  # ─── BACKOFFICE {{upperCase name}} ─────────────────────────────────────────────────
   backoffice-{{dashCase name}}:
     build:
       context: ../
@@ -65,16 +68,18 @@
     environment:
       API_URL: http://{{dashCase apiSource}}-service:{{apiPort}}
       SESSION_SECRET: ${BACKOFFICE_{{constantCase name}}_SESSION_SECRET:?required}
-{{#if (eq authProvider "zitadel")}}
+{{#if (eq ../authProvider "zitadel")}}
       ZITADEL_PUBLIC_URL: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
       REDIRECT_URI: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost}/auth/callback
 {{/if}}
     depends_on:
       {{dashCase apiSource}}-service:
         condition: service_healthy
-{{/if}}
 
-{{#if isPortal}}
+{{/each}}
+
+{{#each portals}}
+  # ─── PORTAL {{upperCase name}} ─────────────────────────────────────────────────
   portal-{{dashCase name}}:
     build:
       context: ../
@@ -85,10 +90,11 @@
     environment:
       API_URL: http://{{dashCase apiSource}}-service:{{apiPort}}
       SESSION_SECRET: ${PORTAL_{{constantCase name}}_SESSION_SECRET:?required}
-{{#if (eq authProvider "zitadel")}}
+{{#if (eq ../authProvider "zitadel")}}
       REDIRECT_URI: ${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}/auth/callback
 {{/if}}
     depends_on:
       {{dashCase apiSource}}-service:
         condition: service_healthy
-{{/if}}
+
+{{/each}}

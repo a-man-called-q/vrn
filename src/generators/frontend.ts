@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { copyTemplateDir, copyTemplateFile } from "../utils/template.js"
-import { ScaffoldData } from "../types.js"
+import { TemplateData } from "../types.js"
 
 export interface FrontendConfig {
   kind: "portal" | "backoffice"
@@ -14,19 +14,14 @@ export interface FrontendConfig {
 export function generateFrontend(
   targetDir: string,
   templatesDir: string,
-  data: ScaffoldData,
+  data: TemplateData,
   config: FrontendConfig
 ): void {
   const { name, authProvider } = data
   const destDir = join(targetDir, `apps/${config.prefix}-${name}`)
 
-  copyTemplateDir(
-    join(templatesDir, `apps/${config.kind}`),
-    destDir,
-    data
-  )
+  copyTemplateDir(join(templatesDir, `apps/${config.kind}`), destDir, data)
 
-  // Shared auth files
   copyTemplateFile(
     join(templatesDir, `_shared/${authProvider}/session.ts`),
     join(destDir, "src/lib/auth/session.ts"),

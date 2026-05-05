@@ -1,13 +1,10 @@
 import { generateFrontend } from "./frontend.js"
-import { ScaffoldData } from "../types.js"
+import { TemplateData } from "../types.js"
 
-/**
- * Generate the Backoffice admin app: apps/backoffice-{name}/
- */
 export function generateBackoffice(
   targetDir: string,
   templatesDir: string,
-  data: ScaffoldData
+  data: TemplateData
 ): void {
   generateFrontend(targetDir, templatesDir, data, {
     kind: "backoffice",
