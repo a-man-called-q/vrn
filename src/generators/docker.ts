@@ -14,7 +14,7 @@ export function regenerateDocker(
   const templateData = {
     name: config.name,
     projectName: config.name,
-    authProvider: config.useZitadel ? "zitadel" : "better-auth",
+    authMode: config.useZitadel ? "zitadel" : "local",
     packageManager: config.packageManager,
     packageManagerVersion: config.packageManagerVersion,
     moonVersion: config.moonVersion,

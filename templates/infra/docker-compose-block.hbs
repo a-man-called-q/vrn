@@ -30,15 +30,13 @@
       - proxy
     environment:
       PORT: {{port}}
-{{#if (eq ../authProvider "zitadel")}}
+{{#if (eq ../authMode "zitadel")}}
       ZITADEL_ISSUER: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
-      ZITADEL_INTERNAL_URL: http://zitadel-api:8080
       ZITADEL_CLIENT_ID: ${API_{{constantCase name}}_ZITADEL_CLIENT_ID:-}
-      ZITADEL_WEBHOOK_SECRET: ${API_{{constantCase name}}_ZITADEL_WEBHOOK_SECRET:?required}
-{{else}}
+      ZITADEL_CLIENT_SECRET: ${API_{{constantCase name}}_ZITADEL_CLIENT_SECRET:?required}
+{{/if}}
       BETTER_AUTH_SECRET: ${APP_{{constantCase name}}_BETTER_AUTH_SECRET:?required}
       BETTER_AUTH_URL: ${API_{{constantCase name}}_URL:-http://{{dashCase name}}-service.localhost}
-{{/if}}
       ALLOWED_ORIGINS: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost},${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:{{port}}/health"]
@@ -49,7 +47,7 @@
     depends_on:
       db-{{dashCase name}}:
         condition: service_healthy
-{{#if (eq ../authProvider "zitadel")}}
+{{#if (eq ../authMode "zitadel")}}
       zitadel-api:
         condition: service_healthy
 {{/if}}
@@ -68,7 +66,7 @@
     environment:
       API_URL: http://{{dashCase apiSource}}-service:{{apiPort}}
       SESSION_SECRET: ${BACKOFFICE_{{constantCase name}}_SESSION_SECRET:?required}
-{{#if (eq ../authProvider "zitadel")}}
+{{#if (eq ../authMode "zitadel")}}
       ZITADEL_PUBLIC_URL: ${ZITADEL_PUBLIC_URL:-https://auth.localhost}
       REDIRECT_URI: ${BACKOFFICE_{{constantCase name}}_APP_URL:-http://backoffice-{{dashCase name}}.localhost}/auth/callback
 {{/if}}
@@ -90,7 +88,7 @@
     environment:
       API_URL: http://{{dashCase apiSource}}-service:{{apiPort}}
       SESSION_SECRET: ${PORTAL_{{constantCase name}}_SESSION_SECRET:?required}
-{{#if (eq ../authProvider "zitadel")}}
+{{#if (eq ../authMode "zitadel")}}
       REDIRECT_URI: ${PORTAL_{{constantCase name}}_APP_URL:-http://portal-{{dashCase name}}.localhost}/auth/callback
 {{/if}}
     depends_on:

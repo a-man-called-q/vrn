@@ -1,5 +1,5 @@
 export type PackageManager = "bun" | "npm" | "pnpm" | "yarn"
-export type AuthProvider = "zitadel" | "better-auth"
+export type AuthMode = "zitadel" | "local"
 export type ServiceFramework = "elysia" | "litestar"
 
 export interface ProjectConfig {
@@ -26,7 +26,7 @@ export interface AppEntry {
 export interface TemplateData {
   name: string
   projectName: string
-  authProvider: AuthProvider
+  authMode: AuthMode
   serviceFramework: ServiceFramework
   apiSource: string
   apiPort: string

@@ -46,7 +46,7 @@ export async function run(): Promise<void> {
   }
 
   const useZitadelResult = await p.confirm({
-    message: "Use Zitadel as identity provider?",
+    message: "Use Zitadel instead of local auth?",
     initialValue: true,
   })
   if (p.isCancel(useZitadelResult)) { p.cancel("Cancelled."); process.exit(0) }

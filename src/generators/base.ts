@@ -10,7 +10,7 @@ export function generateBase(
   const templateData: TemplateData = {
     name: config.name,
     projectName: config.name,
-    authProvider: config.useZitadel ? "zitadel" : "better-auth",
+    authMode: config.useZitadel ? "zitadel" : "local",
     serviceFramework: "elysia",
     apiSource: config.name,
     apiPort: "4001",

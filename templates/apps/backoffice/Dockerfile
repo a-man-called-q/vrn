@@ -4,19 +4,19 @@ WORKDIR /workspace
 # Install workspace deps (monorepo-aware)
 COPY package.json bun.lock ./
 COPY packages/ui/package.json ./packages/ui/
-COPY packages/{{dashCase name}}-service-client/package.json ./packages/{{dashCase name}}-service-client/
+COPY packages/{{dashCase apiSource}}-service-client/package.json ./packages/{{dashCase apiSource}}-service-client/
 {{#if (eq serviceFramework "elysia")}}
-COPY apps/{{dashCase name}}-service/package.json ./apps/{{dashCase name}}-service/
+COPY apps/{{dashCase apiSource}}-service/package.json ./apps/{{dashCase apiSource}}-service/
 {{/if}}
 COPY apps/backoffice-{{dashCase name}}/package.json ./apps/backoffice-{{dashCase name}}/
 RUN bun install
 
 # Copy source
 COPY packages/ui/ ./packages/ui/
-COPY packages/{{dashCase name}}-service-client/ ./packages/{{dashCase name}}-service-client/
+COPY packages/{{dashCase apiSource}}-service-client/ ./packages/{{dashCase apiSource}}-service-client/
 {{#if (eq serviceFramework "elysia")}}
-COPY apps/{{dashCase name}}-service/src/ ./apps/{{dashCase name}}-service/src/
-COPY apps/{{dashCase name}}-service/tsconfig.json ./apps/{{dashCase name}}-service/
+COPY apps/{{dashCase apiSource}}-service/src/ ./apps/{{dashCase apiSource}}-service/src/
+COPY apps/{{dashCase apiSource}}-service/tsconfig.json ./apps/{{dashCase apiSource}}-service/
 {{/if}}
 COPY apps/backoffice-{{dashCase name}}/ ./apps/backoffice-{{dashCase name}}/
 

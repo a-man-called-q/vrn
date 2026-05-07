@@ -5,7 +5,7 @@ import { generateService } from "../generators/service.js"
 import { generatePortal } from "../generators/portal.js"
 import { generateBackoffice } from "../generators/backoffice.js"
 import { regenerateDocker } from "../generators/docker.js"
-import { AppEntry, ProjectConfig, ServiceFramework, TemplateData } from "../types.js"
+import { AppEntry, AuthMode, ProjectConfig, ServiceFramework, TemplateData } from "../types.js"
 
 const TEMPLATES_DIR = new URL("../../templates", import.meta.url).pathname
 
@@ -18,11 +18,13 @@ function buildTemplateData(appEntry: AppEntry, config: ProjectConfig): TemplateD
     ? config.apps.find(a => a.type === "service" && a.name === appEntry.apiSource)
     : firstService
 
+  const authMode: AuthMode = config.useZitadel ? "zitadel" : "local"
+
   return {
     name: appEntry.name,
     projectName: config.name,
-    authProvider: config.useZitadel ? "zitadel" : "better-auth",
-    serviceFramework: appEntry.serviceFramework ?? "elysia",
+    authMode,
+    serviceFramework: appEntry.serviceFramework ?? connectedService?.serviceFramework ?? "elysia",
     apiSource: appEntry.apiSource ?? (appEntry.type !== "service" ? (firstService?.name ?? appEntry.name) : appEntry.name),
     apiPort: appEntry.type === "service" ? appEntry.port : (connectedService?.port ?? "4001"),
     portalPort: appEntry.type === "portal" ? appEntry.port : (firstPortal?.port ?? "3001"),

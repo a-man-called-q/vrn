@@ -1,11 +1,21 @@
 {
-  "include": ["**/*.ts", "**/*.tsx", "vite.config.js"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "vite.config.js"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "vite/client"
+    ],
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -18,10 +28,18 @@
     "noUncheckedSideEffectImports": true,
     "allowJs": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@workspace/ui/*": ["../../packages/ui/src/*"],
-      "@workspace/{{dashCase apiSource}}-service-client": ["../../packages/{{dashCase apiSource}}-service-client/src/index.ts"],
-      "api/*": ["../../apps/{{dashCase apiSource}}-service/src/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@workspace/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@workspace/{{dashCase apiSource}}-service-client": [
+        "../../packages/{{dashCase apiSource}}-service-client/src/index.ts"
+      ],
+      "api/*": [
+        "../../apps/{{dashCase apiSource}}-service/src/*"
+      ]
     }
   }
 }

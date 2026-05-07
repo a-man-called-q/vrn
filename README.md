@@ -12,23 +12,38 @@ npx create-vrn
 
 No flags needed — the CLI will guide you through interactive prompts.
 
+## CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `bun create vrn [name]` | Create a new project |
+| `bunx vrn gen [service\|portal\|backoffice]` | Add an app to an existing project |
+| `bunx vrn link <source> <target>` | Link two services together |
+| `bunx vrn doctor` | Check system requirements |
+
 ## What Gets Generated
 
-### Generation Types
+### App Types
 
 | Type | What you get |
 |------|-------------|
-| **Full Suite** | Service + Database + Portal + Backoffice |
-| **Service Only** | Service + Database + typed client |
-| **Portal Only** | React frontend for end users |
-| **Backoffice Only** | React admin dashboard |
+| **Service** | API backend + database + typed client package |
+| **Portal** | React frontend for end users |
+| **Backoffice** | React admin dashboard |
+
+You can mix and match — add any combination of apps to a single monorepo.
 
 ### Stack
 
-**Service**
+**Service (Elysia — TypeScript)**
 - [Elysia.js](https://elysiajs.com) — lightweight HTTP framework for Bun
 - PostgreSQL + [Drizzle ORM](https://orm.drizzle.team)
 - Auto-generated TypeScript API client via `@elysiajs/eden`
+
+**Service (Litestar — Python)**
+- [Litestar](https://litestar.dev) — async Python web framework
+- PostgreSQL + SQLAlchemy
+- Managed with [uv](https://docs.astral.sh/uv/)
 
 **Frontend (Portal & Backoffice)**
 - React 19 + [TanStack Router](https://tanstack.com/router) + [TanStack Start](https://tanstack.com/start)
@@ -47,16 +62,20 @@ No flags needed — the CLI will guide you through interactive prompts.
 
 ## Authentication
 
-Two providers to choose from:
+Two authentication modes to choose from:
 
-- **Zitadel** — OIDC-based, enterprise-grade, with Redis session caching
-- **Better Auth** — self-hosted email/password authentication
+- **Zitadel** — OIDC-based, enterprise-grade identity provider
+- **Local auth** — self-hosted email/password authentication
 
 ## Requirements
 
 - Bun 1.3.10+
 - Node 20+
 - Docker (for PostgreSQL and other services)
+- Python 3.12+ + [uv](https://docs.astral.sh/uv/) _(only if using Litestar services)_
+- [Moonrepo](https://moonrepo.dev) + [Proto](https://moonrepo.dev/proto)
+
+Run `bunx vrn doctor` to verify your environment.
 
 ## After Scaffolding
 
@@ -80,13 +99,30 @@ Docker Compose is included with pre-configured services for PostgreSQL, the Serv
 ```
 your-project/
 ├── apps/
-│   ├── {name}-service/          # Elysia backend
-│   ├── portal-{name}/       # End-user frontend
-│   └── backoffice-{name}/   # Admin dashboard
+│   ├── {name}-service/          # Elysia or Litestar backend
+│   ├── portal-{name}/           # End-user frontend
+│   └── backoffice-{name}/       # Admin dashboard
 ├── packages/
-│   ├── ui/                  # Shared UI components
+│   ├── ui/                      # Shared UI components
 │   ├── {name}-service-client/   # Generated service client
-│   └── db-{name}/           # Drizzle schema & client
+│   └── db-{name}/               # Drizzle schema & client
 ├── docker-compose.yml
-└── .moon/                   # Moon workspace config
+├── vrn.yaml                     # Project manifest
+└── .moon/                       # Moon workspace config
+```
+
+## Adding Apps Later
+
+```bash
+# add a new service
+bunx vrn gen service
+
+# add a portal
+bunx vrn gen portal
+
+# add a backoffice
+bunx vrn gen backoffice
+
+# link two services so one can call the other
+bunx vrn link payments users
 ```

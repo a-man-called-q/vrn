@@ -17,10 +17,10 @@ registerHelpers()
 const BINARY_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".ico", ".woff", ".woff2", ".ttf", ".eot"])
 
 // Files/dirs prefixed with [value] are only copied when data contains that value as a field.
-// E.g. "[zitadel]schema.ts" is copied as "schema.ts" only when authProvider === "zitadel".
+// E.g. "[zitadel]schema.ts" is copied as "schema.ts" only when authMode === "zitadel".
 const CONDITION_RE = /^\[([^\]]+)\]/
 
-const VALID_CONDITIONS = new Set(["zitadel", "better-auth", "elysia", "litestar"])
+const VALID_CONDITIONS = new Set(["zitadel", "local", "elysia", "litestar"])
 
 function resolveCondition(name: string, data: any): { skip: boolean; outputName: string } {
   const m = CONDITION_RE.exec(name)
@@ -28,7 +28,7 @@ function resolveCondition(name: string, data: any): { skip: boolean; outputName:
   const condition = m[1]
   
   if (VALID_CONDITIONS.has(condition)) {
-    const matches = data.authProvider === condition || data.serviceFramework === condition
+    const matches = data.authMode === condition || data.serviceFramework === condition
     return { skip: !matches, outputName: name.slice(m[0].length) }
   }
   

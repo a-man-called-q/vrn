@@ -6,8 +6,8 @@
   },
   "dependencies": {
     "@elysiajs/cors": "^1.2.0",
+    "better-auth": "^1.2.7",
     "elysia": "latest",
-    "ioredis": "^5.4.1",
     "@workspace/db-{{dashCase name}}": "workspace:*"
   },
   "devDependencies": {

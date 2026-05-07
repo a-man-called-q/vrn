@@ -2,7 +2,7 @@
 networks:
   proxy:
     name: proxy
-{{#if (eq authProvider "zitadel")}}
+{{#if (eq authMode "zitadel")}}
 
 volumes:
   zitadel-bootstrap:

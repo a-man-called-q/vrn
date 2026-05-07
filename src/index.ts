@@ -5,6 +5,10 @@ if (command === "gen") {
   await import("./commands/gen.js").then(m => m.run())
 } else if (command === "link") {
   await import("./commands/link.js").then(m => m.run())
+} else if (command === "doctor") {
+  await import("./commands/doctor.js").then(m => m.run())
 } else {
   await import("./commands/create.js").then(m => m.run())
 }
+
+export {}

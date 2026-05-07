@@ -1,15 +1,11 @@
-import { Elysia, t } from "elysia"
+import { Elysia } from "elysia"
 import { cors } from "@elysiajs/cors"
-import { setupConsumer, redis } from "./stream"
-import { createHmac, timingSafeEqual } from "node:crypto"
+import { auth } from "./lib/auth"
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean)
-
-// Start Redis Consumer in the background
-setupConsumer().catch(console.error);
 
 const app = new Elysia()
   .use(
@@ -20,37 +16,7 @@ const app = new Elysia()
   )
   .get("/health", () => ({ status: "ok" }))
   .get("/", () => "Hello from {{titleCase name}} API")
-
-  // Zitadel Webhook Broadcaster Endpoint
-  .post("/webhooks/zitadel", async ({ request, headers }) => {
-    // Verify HMAC-SHA256 signature from Zitadel
-    const secret = process.env.ZITADEL_WEBHOOK_SECRET
-    const signature = headers["x-zitadel-signature"]
-    if (!secret || !signature) {
-      return new Response("Unauthorized", { status: 401 })
-    }
-
-    const rawBody = await request.text()
-    const expected = createHmac("sha256", secret)
-      .update(rawBody)
-      .digest("hex")
-    const expectedBuf = Buffer.from(expected)
-    const signatureBuf = Buffer.from(signature)
-    if (expectedBuf.length !== signatureBuf.length || !timingSafeEqual(expectedBuf, signatureBuf)) {
-      return new Response("Unauthorized", { status: 401 })
-    }
-
-    const body = JSON.parse(rawBody)
-    const { zitadelId, email, name } = body
-
-    await redis.xadd(
-      'str:zitadel:events', '*',
-      'type', 'user.registered',
-      'payload', JSON.stringify({ zitadelId, email, name })
-    );
-
-    return { success: true, message: "Identity event broadcasted" };
-  })
+  .all("/api/auth/*", ({ request }) => auth.handler(request))
 
 export type App = typeof app
 

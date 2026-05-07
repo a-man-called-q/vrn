@@ -17,13 +17,14 @@ export function generateFrontend(
   data: TemplateData,
   config: FrontendConfig
 ): void {
-  const { name, authProvider } = data
+  const { name, authMode } = data
   const destDir = join(targetDir, `apps/${config.prefix}-${name}`)
 
+  copyTemplateDir(join(templatesDir, "packages/ui"), join(targetDir, "packages/ui"), data)
   copyTemplateDir(join(templatesDir, `apps/${config.kind}`), destDir, data)
 
   copyTemplateFile(
-    join(templatesDir, `_shared/${authProvider}/session.ts`),
+    join(templatesDir, `_shared/${authMode}/session.ts`),
     join(destDir, "src/lib/auth/session.ts"),
     data
   )
@@ -34,7 +35,7 @@ export function generateFrontend(
     authClientModule: config.authClientModule,
   }
   copyTemplateFile(
-    join(templatesDir, `_shared/${authProvider}/server-auth.ts`),
+    join(templatesDir, `_shared/${authMode}/server-auth.ts`),
     join(destDir, "src/server/auth.ts"),
     serverAuthData
   )
@@ -46,7 +47,7 @@ export function generateFrontend(
     loginButton: config.loginButton,
   }
   copyTemplateFile(
-    join(templatesDir, `_shared/${authProvider}/login.tsx`),
+    join(templatesDir, `_shared/${authMode}/login.tsx`),
     join(destDir, "src/routes/_auth/login.tsx"),
     loginData
   )

@@ -10,7 +10,7 @@ export function generateBackoffice(
     kind: "backoffice",
     prefix: "backoffice",
     defaultRoute: "/dashboard",
-    authClientModule: data.authProvider === "zitadel" ? "zitadel" : "api-client",
+    authClientModule: data.authMode === "zitadel" ? "zitadel" : "api-client",
     loginSubtitle: "Sign in with your admin account",
     loginButton: "Continue to Login",
   })

@@ -1,4 +1,4 @@
-import { createApiClient } from "@workspace/{{dashCase name}}-service-client"
+import { createApiClient } from "@workspace/{{dashCase apiSource}}-service-client"
 
 const api = createApiClient(process.env.API_URL!)
 
@@ -47,7 +47,7 @@ export async function createUser(data: {
 }
 
 // ─── Roles ───────────────────────────────────────────────────────────
-// Better Auth does not have project-level roles like Zitadel.
+// Local auth does not have project-level roles like Zitadel.
 // Roles are stored as a field on the user via the admin plugin.
 
 export interface Role {
@@ -62,9 +62,9 @@ export async function getRoles(): Promise<Role[]> {
 }
 
 export async function createRoleApi(_data: { key: string; displayName: string; group?: string }): Promise<void> {
-  throw new Error("Role management requires the Better Auth admin plugin to be configured in the API.")
+  throw new Error("Role management requires an admin plugin to be configured in the API.")
 }
 
 export async function deleteRoleApi(_key: string): Promise<void> {
-  throw new Error("Role management requires the Better Auth admin plugin to be configured in the API.")
+  throw new Error("Role management requires an admin plugin to be configured in the API.")
 }
