@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/rate-limit": "^1.2.0",
     "better-auth": "^1.2.7",
     "elysia": "latest",
     "@workspace/db-{{dashCase name}}": "workspace:*"

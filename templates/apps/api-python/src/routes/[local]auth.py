@@ -1,12 +1,17 @@
+import logging
 from dataclasses import dataclass
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from authlib.jose.errors import JoseError
+from tortoise.exceptions import DoesNotExist
 from litestar import Router, get, post
 from litestar.connection import Request
 from litestar.exceptions import HTTPException
 from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from ..models.user import User
 from ..auth import create_token, verify_token
+
+logger = logging.getLogger(__name__)
 
 _ph = PasswordHasher()
 
@@ -59,7 +64,10 @@ async def me(request: Request) -> dict:
         claims = verify_token(auth_header[7:])
         user = await User.get(id=int(claims["sub"]))
         return {"id": user.id, "email": user.email, "name": user.name}
+    except (JoseError, DoesNotExist, KeyError, ValueError):
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid token")
     except Exception:
+        logger.exception("Unexpected error in /auth/me")
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 

@@ -9,10 +9,12 @@
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --splitting",
     "dev": "bun src/index.ts",
+    "test": "bun test src/__tests__",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "@clack/prompts": "^0.10.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "change-case": "^5.4.4",
     "handlebars": "^4.7.8",
     "yaml": "^2.7.1"

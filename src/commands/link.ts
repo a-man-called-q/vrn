@@ -1,15 +1,13 @@
 import * as p from "@clack/prompts"
-import { findProjectRoot, readProjectConfig, writeProjectConfig } from "../utils/project.js"
+import { requireProjectRoot, readProjectConfig } from "../utils/project.js"
+import { runInstall } from "../utils/cli.js"
+import { linkServices } from "../actions/link.js"
 
 export async function run(): Promise<void> {
   const source = process.argv[3]
   const target = process.argv[4]
 
-  const projectRoot = findProjectRoot()
-  if (!projectRoot) {
-    console.error("Not inside a VRN project. Run `bun create vrn <name>` to create one.")
-    process.exit(1)
-  }
+  const projectRoot = requireProjectRoot()
 
   if (!source || !target) {
     console.error("Usage: bunx vrn link <source-service> <target-service>")
@@ -21,32 +19,28 @@ export async function run(): Promise<void> {
   console.log()
   p.intro(`vrn link — Connect ${source} → ${target}`)
 
-  const sourceApp = config.apps.find(a => a.name === source && a.type === "service")
-  const targetApp = config.apps.find(a => a.name === target && a.type === "service")
+  const result = linkServices(projectRoot, config, source, target)
 
-  if (!sourceApp) {
-    p.cancel(`Service "${source}" not found in .vrn.yaml`)
-    process.exit(1)
-  }
-  if (!targetApp) {
-    p.cancel(`Service "${target}" not found in .vrn.yaml`)
-    process.exit(1)
-  }
-
-  if (source === target) {
-    p.cancel("A service cannot link to itself.")
-    process.exit(1)
-  }
-
-  if (sourceApp.links?.includes(target)) {
-    p.log.warn(`${source} already links to ${target}`)
-    process.exit(0)
+  if (!result.ok) {
+    const messages: Record<typeof result.reason, string> = {
+      "self-link": "A service cannot link to itself.",
+      "already-linked": `${source} already links to ${target}`,
+      "source-not-found": `Service "${source}" not found in vrn.yaml`,
+      "target-not-found": `Service "${target}" not found in vrn.yaml`,
+    }
+    if (result.reason === "already-linked") {
+      p.log.warn(messages[result.reason])
+    } else {
+      p.cancel(messages[result.reason])
+    }
+    process.exit(result.reason === "already-linked" ? 0 : 1)
   }
 
-  sourceApp.links = [...(sourceApp.links ?? []), target]
-  writeProjectConfig(projectRoot, config)
+  if (result.addedDep) {
+    p.log.info(`Added ${result.clientPkg} to ${result.servicePkgPath}`)
+    runInstall(projectRoot, config.packageManager)
+  }
 
   p.log.success(`Linked ${source}-service → ${target}-service-client`)
-  p.log.info(`Add "${target}-service-client" to ${source}-service's dependencies manually.`)
   p.outro("Done!")
 }

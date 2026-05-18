@@ -9,6 +9,8 @@
     ],
     "skipLibCheck": true,
     "strict": true,
+    "resolveJsonModule": true,
+    "rootDir": "./src",
     "outDir": "dist"
   },
   "include": [

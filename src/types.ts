@@ -8,6 +8,8 @@ export interface ProjectConfig {
   packageManagerVersion: string
   moonVersion: string
   useZitadel: boolean
+  multiTenant: boolean
+  addons: string[]
   apps: AppEntry[]
 }
 
@@ -21,18 +23,23 @@ export interface AppEntry {
   links?: string[]
 }
 
-// Runtime data passed to Handlebars template engine during generation.
-// Kept shape-compatible with the old ScaffoldData so no templates need to change.
-export interface TemplateData {
+// Minimal data for base monorepo templates (no app-specific fields).
+export interface BaseTemplateData {
   name: string
   projectName: string
   authMode: AuthMode
+  multiTenant: boolean
+  packageManager: PackageManager
+  packageManagerVersion: string
+  moonVersion: string
+}
+
+// Full data passed to app-level Handlebars templates.
+export interface TemplateData extends BaseTemplateData {
   serviceFramework: ServiceFramework
   apiSource: string
   apiPort: string
   portalPort: string
   backofficePort: string
-  packageManager: PackageManager
-  packageManagerVersion: string
-  moonVersion: string
+  subscription: boolean
 }

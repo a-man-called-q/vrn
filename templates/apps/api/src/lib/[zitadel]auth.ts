@@ -3,6 +3,11 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { genericOAuth } from "better-auth/plugins"
 import { db } from "@workspace/db-{{dashCase name}}"
 
+const secret = process.env.BETTER_AUTH_SECRET
+if (!secret || secret.length < 32) {
+  throw new Error("BETTER_AUTH_SECRET must be set and at least 32 characters (generate: openssl rand -hex 32)")
+}
+
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
   .split(",")
   .map((s) => s.trim())
@@ -11,7 +16,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
   trustedOrigins: ALLOWED_ORIGINS,
-  secret: process.env.BETTER_AUTH_SECRET!,
+  secret,
   plugins: [
     genericOAuth({
       config: [

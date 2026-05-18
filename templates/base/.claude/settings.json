@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vrn": {
+      "command": "bunx",
+      "args": ["vrn", "mcp"]
+    }
+  }
+}

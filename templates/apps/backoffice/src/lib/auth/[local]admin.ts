@@ -2,6 +2,10 @@ import { createApiClient } from "@workspace/{{dashCase apiSource}}-service-clien
 
 const api = createApiClient(process.env.API_URL!)
 
+function getErrMsg(error: unknown, fallback: string): string {
+  return (error as { value?: { message?: string } })?.value?.message ?? fallback
+}
+
 // ─── Users ───────────────────────────────────────────────────────────
 
 export interface User {
@@ -24,15 +28,15 @@ export async function getActiveSessionCount(): Promise<number | null> {
 
 export async function getUsers(): Promise<User[]> {
   const { data, error } = await api.admin.users.get()
-  if (error) throw new Error(`Failed to fetch users: ${(error.value as any)?.message ?? 'Unknown error'}`)
-  const users = (data as any).users ?? []
-  return users.map((u: any) => ({
-    id: u.id,
-    name: u.name ?? u.email,
-    email: u.email,
-    emailVerified: u.emailVerified ?? false,
-    createdAt: u.createdAt ?? "",
-    roles: u.role ? [u.role] : [],
+  if (error) throw new Error(`Failed to fetch users: ${getErrMsg(error, "Unknown error")}`)
+  const users = (data as { users?: Record<string, unknown>[] }).users ?? []
+  return users.map((u) => ({
+    id: String(u.id ?? ""),
+    name: String(u.name ?? u.email ?? ""),
+    email: String(u.email ?? ""),
+    emailVerified: Boolean(u.emailVerified),
+    createdAt: String(u.createdAt ?? ""),
+    roles: u.role ? [String(u.role)] : [],
   }))
 }
 
@@ -41,9 +45,9 @@ export async function createUser(data: {
   email: string
   password: string
 }): Promise<{ userId: string }> {
-  const { data: result, error } = await api.admin.users.post(data as any)
-  if (error) throw new Error((error.value as any)?.message ?? "Failed to create user")
-  return result as any
+  const { data: result, error } = await api.admin.users.post(data as never)
+  if (error) throw new Error(getErrMsg(error, "Failed to create user"))
+  return result as { userId: string }
 }
 
 // ─── Roles ───────────────────────────────────────────────────────────

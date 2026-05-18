@@ -13,3 +13,9 @@ const client = postgres(connectionString);
 export const db = drizzle(client, { schema });
 
 export * from './schema';
+{{#if multiTenant}}
+export * from './tenants';
+{{/if}}
+{{#if subscription}}
+export * from './subscription';
+{{/if}}

@@ -4,7 +4,7 @@ import {
   writeFileSync,
   mkdirSync,
   readdirSync,
-  statSync,
+  lstatSync,
   existsSync,
   copyFileSync,
 } from "node:fs"
@@ -20,41 +20,28 @@ const BINARY_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".ico", ".woff", ".w
 // E.g. "[zitadel]schema.ts" is copied as "schema.ts" only when authMode === "zitadel".
 const CONDITION_RE = /^\[([^\]]+)\]/
 
-const VALID_CONDITIONS = new Set(["zitadel", "local", "elysia", "litestar"])
-
-function resolveCondition(name: string, data: any): { skip: boolean; outputName: string } {
+export function resolveCondition(
+  name: string,
+  data: Record<string, unknown>
+): { skip: boolean; outputName: string } {
   const m = CONDITION_RE.exec(name)
   if (!m) return { skip: false, outputName: name }
   const condition = m[1]
-  
-  if (VALID_CONDITIONS.has(condition)) {
-    const matches = data.authMode === condition || data.serviceFramework === condition
-    return { skip: !matches, outputName: name.slice(m[0].length) }
-  }
-  
   const matches = Object.values(data).some(v => v === condition)
+    || data[condition] === true
   return { skip: !matches, outputName: name.slice(m[0].length) }
 }
 
-/**
- * Process a Handlebars template string with the provided data.
- */
 export function processTemplate(templateContent: string, data: object): string {
   const compiled = Handlebars.compile(templateContent, { noEscape: true })
   return compiled(data)
 }
 
-/**
- * Process a template file and return the rendered string.
- */
 export function processTemplateFile(templatePath: string, data: object): string {
   const content = readFileSync(templatePath, "utf-8")
   return processTemplate(content, data)
 }
 
-/**
- * Copy a single template file to a destination, processing it through Handlebars.
- */
 export function copyTemplateFile(
   srcFile: string,
   destFile: string,
@@ -65,10 +52,6 @@ export function copyTemplateFile(
   writeFileSync(destFile, rendered, "utf-8")
 }
 
-/**
- * Recursively copy all files from srcDir to destDir, processing each through
- * Handlebars. Skips any top-level directory named `_auth`.
- */
 export function copyTemplateDir(
   srcDir: string,
   destDir: string,
@@ -80,12 +63,15 @@ export function copyTemplateDir(
   for (const entry of entries) {
     if (_isRoot && entry === "_auth") continue
 
-    const { skip, outputName } = resolveCondition(entry, data)
+    const { skip, outputName } = resolveCondition(entry, data as Record<string, unknown>)
     if (skip) continue
 
     const srcPath = join(srcDir, entry)
     const destPath = join(destDir, outputName)
-    const stat = statSync(srcPath)
+    const stat = lstatSync(srcPath)
+
+    // Skip symlinks — templates dir is package-controlled and shouldn't contain them
+    if (stat.isSymbolicLink()) continue
 
     if (stat.isDirectory()) {
       copyTemplateDir(srcPath, destPath, data, false)

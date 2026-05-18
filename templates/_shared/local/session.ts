@@ -32,6 +32,9 @@ export async function setSession(session: Session): Promise<void> {
     .setExpirationTime("7d")
     .encrypt(getSecret())
 
+  // sameSite: "lax" is intentional — it blocks cross-site form/XHR submissions while
+  // allowing top-level navigations. Server functions use POST+JSON (not HTML forms), so
+  // cross-site CSRF via a plain form is structurally impossible regardless.
   setCookie(COOKIE_NAME, jwt, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

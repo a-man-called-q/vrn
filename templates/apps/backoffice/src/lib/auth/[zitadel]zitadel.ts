@@ -2,11 +2,15 @@ import { createApiClient } from "@workspace/{{dashCase apiSource}}-service-clien
 
 const api = createApiClient(process.env.API_URL!)
 
+function getErrMsg(error: unknown, fallback: string): string {
+  return (error as { value?: { message?: string } })?.value?.message ?? fallback
+}
+
 // ─── Auth ────────────────────────────────────────────────────────────
 
 export async function initAuth(redirectUri: string) {
   const { data, error } = await api.auth.init.get({ query: { redirectUri } })
-  if (error) throw new Error(`Auth init failed: ${(error.value as any)?.message ?? 'Unknown error'}`)
+  if (error) throw new Error(`Auth init failed: ${getErrMsg(error, "Unknown error")}`)
   return data
 }
 
@@ -16,7 +20,7 @@ export async function exchangeToken(
   redirectUri: string,
 ) {
   const { data, error } = await api.auth.exchange.post({ code, codeVerifier, redirectUri })
-  if (error) throw new Error(`Token exchange failed: ${(error.value as any)?.message ?? 'Unknown error'}`)
+  if (error) throw new Error(`Token exchange failed: ${getErrMsg(error, "Unknown error")}`)
   return data
 }
 
@@ -25,7 +29,7 @@ export async function getLogoutUrl(
   redirectUri: string,
 ) {
   const { data, error } = await api.auth.logout.post({ idToken, redirectUri })
-  if (error) throw new Error(`Logout failed: ${(error.value as any)?.message ?? 'Unknown error'}`)
+  if (error) throw new Error(`Logout failed: ${getErrMsg(error, "Unknown error")}`)
   return data
 }
 
@@ -33,13 +37,13 @@ export async function getLogoutUrl(
 
 export async function getUserCount(): Promise<number> {
   const { data, error } = await api.admin.users.count.get()
-  if (error) throw new Error(`Failed to fetch user count: ${(error.value as any)?.message ?? 'Unknown error'}`)
-  return data?.count ?? 0
+  if (error) throw new Error(`Failed to fetch user count: ${getErrMsg(error, "Unknown error")}`)
+  return (data as { count?: number })?.count ?? 0
 }
 
 export async function getActiveSessionCount(): Promise<number | null> {
   const { data } = await api.admin.sessions.count.get()
-  return data?.count ?? null
+  return (data as { count?: number })?.count ?? null
 }
 
 export interface User {
@@ -54,22 +58,21 @@ export interface User {
 
 export async function getUsers(): Promise<User[]> {
   const { data, error } = await api.admin.users.get()
-  if (error) throw new Error(`Failed to fetch users: ${(error.value as any)?.message ?? 'Unknown error'}`)
-  const users = (data as any).users ?? []
-  return users.map((u: any) => {
-    const profile = u.human?.profile
+  if (error) throw new Error(`Failed to fetch users: ${getErrMsg(error, "Unknown error")}`)
+  const users = (data as { users?: Record<string, unknown>[] }).users ?? []
+  return users.map((u) => {
+    const profile = (u.human as { profile?: Record<string, string> })?.profile
     const displayName =
       (profile?.displayName ?? [profile?.firstName, profile?.lastName].filter(Boolean).join(" "))
-      || u.userName
-      || "—"
+      || String(u.userName ?? "—")
     return {
-      id: u.id,
+      id: String(u.id ?? ""),
       name: displayName,
-      email: u.human?.email?.email ?? "—",
-      emailVerified: u.human?.email?.isEmailVerified ?? false,
-      state: u.state ?? "USER_STATE_ACTIVE",
-      createdAt: u.details?.creationDate ?? "",
-      roles: u.roles ?? [],
+      email: String((u.human as { email?: { email?: string } })?.email?.email ?? "—"),
+      emailVerified: Boolean((u.human as { email?: { isEmailVerified?: boolean } })?.email?.isEmailVerified),
+      state: String(u.state ?? "USER_STATE_ACTIVE"),
+      createdAt: String((u.details as { creationDate?: string })?.creationDate ?? ""),
+      roles: Array.isArray(u.roles) ? u.roles.map(String) : [],
     }
   })
 }
@@ -81,9 +84,9 @@ export async function createUser(data: {
   username: string
   initialPassword: string
 }): Promise<{ userId: string }> {
-  const { data: result, error } = await api.admin.users.post(data as any)
-  if (error) throw new Error((error.value as any)?.message ?? "Failed to create user")
-  return result as any
+  const { data: result, error } = await api.admin.users.post(data as never)
+  if (error) throw new Error(getErrMsg(error, "Failed to create user"))
+  return result as { userId: string }
 }
 
 // ─── Roles ───────────────────────────────────────────────────────────
@@ -97,22 +100,22 @@ export interface Role {
 
 export async function getRoles(): Promise<Role[]> {
   const { data, error } = await api.admin.roles.get()
-  if (error) throw new Error((error.value as any)?.message ?? "Failed to fetch roles")
-  const roles = (data as any).roles ?? []
-  return roles.map((r: any) => ({
-    key: r.key,
-    displayName: r.displayName ?? r.key,
-    group: r.group,
-    createdAt: r.creationDate ?? "",
+  if (error) throw new Error(getErrMsg(error, "Failed to fetch roles"))
+  const roles = (data as { roles?: Record<string, unknown>[] }).roles ?? []
+  return roles.map((r) => ({
+    key: String(r.key ?? ""),
+    displayName: String(r.displayName ?? r.key ?? ""),
+    group: r.group ? String(r.group) : undefined,
+    createdAt: String(r.creationDate ?? ""),
   }))
 }
 
 export async function createRoleApi(data: { key: string; displayName: string; group?: string }): Promise<void> {
-  const { error } = await api.admin.roles.post(data as any)
-  if (error) throw new Error((error.value as any)?.message ?? "Failed to create role")
+  const { error } = await api.admin.roles.post(data as never)
+  if (error) throw new Error(getErrMsg(error, "Failed to create role"))
 }
 
 export async function deleteRoleApi(key: string): Promise<void> {
   const { error } = await api.admin.roles({ key }).delete()
-  if (error) throw new Error(`Failed to delete role: ${(error.value as any)?.message ?? 'Unknown error'}`)
+  if (error) throw new Error(`Failed to delete role: ${getErrMsg(error, "Unknown error")}`)
 }

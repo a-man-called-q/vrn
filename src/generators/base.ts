@@ -1,21 +1,17 @@
 import { join } from "node:path"
 import { copyTemplateDir } from "../utils/template.js"
-import { ProjectConfig, TemplateData } from "../types.js"
+import { ProjectConfig, BaseTemplateData } from "../types.js"
 
 export function generateBase(
   targetDir: string,
   templatesDir: string,
   config: ProjectConfig
 ): void {
-  const templateData: TemplateData = {
+  const templateData: BaseTemplateData = {
     name: config.name,
     projectName: config.name,
     authMode: config.useZitadel ? "zitadel" : "local",
-    serviceFramework: "elysia",
-    apiSource: config.name,
-    apiPort: "4001",
-    portalPort: "3001",
-    backofficePort: "5175",
+    multiTenant: config.multiTenant ?? false,
     packageManager: config.packageManager,
     packageManagerVersion: config.packageManagerVersion,
     moonVersion: config.moonVersion,
