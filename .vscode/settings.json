@@ -1,0 +1,17 @@
+{
+  "files.associations": {
+    "templates/**/tsconfig*.json": "jsonc",
+    "templates/**/*.ts": "handlebars",
+    "templates/**/*.tsx": "handlebars",
+    "templates/**/*.json": "jsonc"
+  },
+  "json.schemas": [
+    {
+      "fileMatch": ["templates/**/*.json"],
+      "schema": {}
+    }
+  ],
+  "search.exclude": {
+    "templates/**/node_modules": true
+  }
+}
