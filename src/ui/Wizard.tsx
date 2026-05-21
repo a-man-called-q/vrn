@@ -19,11 +19,12 @@ import {
   type Step,
   type WizardSnapshot,
   type ConfirmStep,
+  type MultiSelectStep,
   type SelectStep,
   type TextStep,
 } from "./wizard-core.js"
 
-export type { Step, TextStep, ConfirmStep, SelectStep } from "./wizard-core.js"
+export type { Step, TextStep, ConfirmStep, SelectStep, MultiSelectStep } from "./wizard-core.js"
 
 export interface WizardProps {
   intro: string
@@ -110,6 +111,7 @@ export function Wizard({ intro, steps, onComplete, onCancel }: WizardProps) {
         <WizardInput
           key={`step-${snap.idx}`}
           step={current}
+          answers={snap.answers}
           initialAnswer={snap.answers[current.id]}
           onSubmit={commit}
           onHighlight={hover}
@@ -130,12 +132,13 @@ export function Wizard({ intro, steps, onComplete, onCancel }: WizardProps) {
 
 interface WizardInputProps {
   step: Step
+  answers: Record<string, unknown>
   initialAnswer: unknown
   onSubmit: (v: unknown) => void
   onHighlight: (v: unknown) => void
 }
 
-function WizardInput({ step, initialAnswer, onSubmit, onHighlight }: WizardInputProps) {
+function WizardInput({ step, answers, initialAnswer, onSubmit, onHighlight }: WizardInputProps) {
   if (step.kind === "text") {
     return <TextInputField step={step} initialAnswer={initialAnswer} onSubmit={onSubmit} />
   }
@@ -146,6 +149,16 @@ function WizardInput({ step, initialAnswer, onSubmit, onHighlight }: WizardInput
         initialAnswer={initialAnswer}
         onSubmit={onSubmit}
         onHighlight={onHighlight}
+      />
+    )
+  }
+  if (step.kind === "multiselect") {
+    return (
+      <MultiSelectField
+        step={step}
+        answers={answers}
+        initialAnswer={initialAnswer}
+        onSubmit={onSubmit}
       />
     )
   }
@@ -240,8 +253,100 @@ function SelectField({
     <SelectInput
       items={step.options.map(o => ({ label: o.label, value: o.value }))}
       initialIndex={initialIndex}
+      itemComponent={SelectItem}
       onHighlight={item => onHighlight(item.value)}
       onSelect={item => onSubmit(item.value)}
     />
+  )
+}
+
+function MultiSelectField({
+  step,
+  answers,
+  initialAnswer,
+  onSubmit,
+}: {
+  step: MultiSelectStep
+  answers: Record<string, unknown>
+  initialAnswer: unknown
+  onSubmit: (v: string[]) => void
+}) {
+  const options = step.resolveOptions(answers)
+  const seed = Array.isArray(initialAnswer)
+    ? (initialAnswer as string[])
+    : step.initialValue ?? []
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(seed))
+  const [cursor, setCursor] = useState(0)
+
+  useInput((input, key) => {
+    if (options.length === 0) {
+      if (key.return) onSubmit([])
+      return
+    }
+    if (key.upArrow) {
+      setCursor(c => (c === 0 ? options.length - 1 : c - 1))
+    } else if (key.downArrow) {
+      setCursor(c => (c === options.length - 1 ? 0 : c + 1))
+    } else if (input === " ") {
+      const value = options[cursor]!.value
+      setSelected(s => {
+        const next = new Set(s)
+        if (next.has(value)) next.delete(value)
+        else next.add(value)
+        return next
+      })
+    } else if (key.return) {
+      const ordered = options.filter(o => selected.has(o.value)).map(o => o.value)
+      onSubmit(ordered)
+    }
+  })
+
+  if (options.length === 0) {
+    return (
+      <Text color={palette.hint} dimColor>
+        nothing to pick — <Text color={palette.accent}>enter</Text> to continue
+      </Text>
+    )
+  }
+
+  return (
+    <Box flexDirection="column">
+      {options.map((opt, i) => {
+        const isCursor = i === cursor
+        const checked = selected.has(opt.value)
+        const head = isCursor ? "❯" : " "
+        const box = checked ? "[x]" : "[ ]"
+        return (
+          <Text key={opt.value} color={isCursor ? "blue" : undefined}>
+            {`${head} ${box} ${opt.label}`}
+          </Text>
+        )
+      })}
+      <Box marginTop={1}>
+        <Text color={palette.hint} dimColor>
+          <Text color={palette.accent}>space</Text> toggle ·{" "}
+          <Text color={palette.accent}>enter</Text> done
+        </Text>
+      </Box>
+    </Box>
+  )
+}
+
+// Custom select item — colors the trailing warning hint (⚠ …) using the
+// palette's warn tone so timed-out probes read as a warning, not a value.
+// Preserves ink-select-input's default selected-item color for the rest.
+function SelectItem({ isSelected, label }: { isSelected?: boolean; label: string }) {
+  const warnIdx = label.indexOf("⚠")
+  const headColor = isSelected ? "blue" : undefined
+  if (warnIdx === -1) {
+    return <Text color={headColor}>{label}</Text>
+  }
+  const head = label.slice(0, warnIdx)
+  const warn = label.slice(warnIdx)
+  return (
+    <Text color={headColor}>
+      {head}
+      <Text color={palette.warn}>{warn}</Text>
+    </Text>
   )
 }

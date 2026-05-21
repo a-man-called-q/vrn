@@ -43,10 +43,18 @@ export interface SelectStep<V extends string = string> extends BaseStep<V> {
   initialValue?: V
 }
 
+export interface MultiSelectStep extends BaseStep<string[]> {
+  kind: "multiselect"
+  // Resolved at render time so options can depend on prior answers.
+  resolveOptions: (answers: Record<string, unknown>) => { value: string; label: string }[]
+  initialValue?: string[]
+}
+
 export type Step =
   | TextStep
   | ConfirmStep
   | SelectStep<string>
+  | MultiSelectStep
 
 // ─── State machine ────────────────────────────────────────────────────
 

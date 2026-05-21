@@ -25,6 +25,23 @@ function textStep(id: string, extras: Partial<Step> = {}): Step {
   } as Step
 }
 
+function multiSelectStep(
+  id: string,
+  resolve: (answers: Record<string, unknown>) => { value: string; label: string }[],
+  extras: Partial<Step> = {},
+): Step {
+  return {
+    kind: "multiselect",
+    id,
+    label: id,
+    prompt: `pick many ${id}`,
+    resolveOptions: resolve,
+    recap: v => v.length > 0 ? `${id}:${v.join("+")}` : undefined,
+    reaction: v => `committed ${v.length}`,
+    ...(extras as any),
+  } as Step
+}
+
 function selectStep(id: string, values: string[], extras: Partial<Step> = {}): Step {
   return {
     kind: "select",
@@ -224,5 +241,49 @@ describe("wizardSpeech", () => {
     const speech = wizardSpeech(initialSnapshot(), steps[0]!, steps, "intro")
     expect(speech.hint).toBe("static fallback")
     expect(speech.hover).toBeUndefined()
+  })
+})
+
+describe("multiselect step", () => {
+  test("commitStep stores the array answer and advances", () => {
+    const step = multiSelectStep("extras", () => [
+      { value: "users", label: "users" },
+      { value: "orders", label: "orders" },
+    ])
+    const next = commitStep(initialSnapshot(), step, ["users", "orders"], "committed 2")
+
+    expect(next.idx).toBe(1)
+    expect(next.answers).toEqual({ extras: ["users", "orders"] })
+    expect(next.mood).toEqual({ kind: "react", line: "committed 2" })
+  })
+
+  test("recap shows joined picks, omitted when empty", () => {
+    const step = multiSelectStep("extras", () => [])
+    const stepBefore: Step = {
+      kind: "text",
+      id: "primary",
+      label: "primary",
+      prompt: "p",
+      recap: v => `primary:${v}`,
+    }
+    const steps = [stepBefore, step]
+
+    const withPicks = recapParts(steps, 2, { primary: "users", extras: ["orders", "billing"] })
+    expect(withPicks).toEqual(["primary:users", "extras:orders+billing"])
+
+    const noPicks = recapParts(steps, 2, { primary: "users", extras: [] })
+    expect(noPicks).toEqual(["primary:users"])
+  })
+
+  test("skipIf honored when no options resolve", () => {
+    const step = multiSelectStep("extras", () => [], {
+      skipIf: answers => {
+        const opts = (answers["__services"] as string[] | undefined) ?? []
+        return opts.length === 0
+      },
+    })
+    const steps = [step]
+    // findPrevActiveIdx skips it — meaning the wizard treats it as not-active.
+    expect(findPrevActiveIdx(steps, 1, { __services: [] })).toBeNull()
   })
 })

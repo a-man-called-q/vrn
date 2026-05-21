@@ -7,6 +7,8 @@ import { generateApp } from "../generators/index.js"
 import { regenerateDocker } from "../generators/docker.js"
 import { resolveTemplatesDir } from "../utils/paths.js"
 import { runInstallQuiet } from "../utils/install.js"
+import { runGen, type AppType } from "../utils/gen-runner.js"
+import { linkAll } from "../actions/link.js"
 import {
   Bubble,
   Wizard,
@@ -22,8 +24,6 @@ import {
 import type { AppEntry, ProjectConfig, ServiceFramework } from "../types.js"
 
 const TEMPLATES_DIR = resolveTemplatesDir(import.meta.url)
-
-type AppType = "service" | "portal" | "backoffice"
 
 const DEFAULT_PORTS: Record<AppType, string> = {
   service: "4001",
@@ -49,9 +49,28 @@ function validatePort(value: string): string | undefined {
   if (!Number.isInteger(n) || n < 1 || n > 65535) return "port must be 1–65535"
 }
 
-function validateServiceName(value: string): string | undefined {
-  if (!value || value.trim() === "") return "service name is required"
-  if (!NAME_RE.test(value)) return "lowercase letters, numbers, and hyphens only"
+function linksStep(config: ProjectConfig): Step {
+  const { links } = verney.gen
+  const services = config.apps.filter(a => a.type === "service")
+  return {
+    kind: "multiselect",
+    id: "links",
+    label: "links",
+    prompt: links.ask,
+    hint: links.hint,
+    resolveOptions: answers => {
+      const ownName = answers["name"] as string | undefined
+      return services
+        .filter(a => a.name !== ownName)
+        .map(a => ({ value: a.name, label: a.name }))
+    },
+    skipIf: answers => {
+      const ownName = answers["name"] as string | undefined
+      return services.filter(a => a.name !== ownName).length === 0
+    },
+    reaction: v => v.length === 0 ? "no links — you can wire later" : `wiring ${v.join(", ")}`,
+    recap: v => v.length > 0 ? `→ ${v.join(", ")}` : undefined,
+  }
 }
 
 function buildServiceSteps(config: ProjectConfig): Step[] {
@@ -85,6 +104,7 @@ function buildServiceSteps(config: ProjectConfig): Step[] {
       display: v => v,
       recap: v => v,
     },
+    linksStep(config),
     {
       kind: "text",
       id: "port",
@@ -101,16 +121,9 @@ function buildServiceSteps(config: ProjectConfig): Step[] {
 }
 
 function buildFrontendSteps(appType: "portal" | "backoffice", config: ProjectConfig): Step[] {
-  const { appName, apiSource, apiSourceManual, port } = verney.gen
-  const services = config.apps.filter(a => a.type === "service")
-  const apiSourceOptions = services.length > 0
-    ? [
-        ...services.map(s => ({ value: s.name, label: `${s.name} (registered)` })),
-        { value: "__other__", label: "other (type manually)" },
-      ]
-    : []
+  const { appName, port } = verney.gen
 
-  const steps: Step[] = [
+  return [
     {
       kind: "text",
       id: "name",
@@ -123,62 +136,20 @@ function buildFrontendSteps(appType: "portal" | "backoffice", config: ProjectCon
       display: v => v,
       recap: v => `${appType}-${v}`,
     },
+    linksStep(config),
+    {
+      kind: "text",
+      id: "port",
+      label: "port",
+      prompt: port.ask,
+      hint: port.hint,
+      placeholder: DEFAULT_PORTS[appType],
+      validate: validatePort,
+      reaction: v => `port ${v}`,
+      display: v => v,
+      recap: v => `port ${v}`,
+    },
   ]
-
-  if (apiSourceOptions.length > 0) {
-    steps.push({
-      kind: "select",
-      id: "apiSource",
-      label: "api source",
-      prompt: apiSource.ask,
-      hint: apiSource.hint,
-      options: apiSourceOptions,
-      reaction: v => v === "__other__" ? "okay, type one in" : `wiring to ${v}`,
-      display: v => v === "__other__" ? "(manual)" : v,
-      recap: v => v === "__other__" ? "" : `→ ${v}`,
-    })
-    steps.push({
-      kind: "text",
-      id: "apiSourceManual",
-      label: "service",
-      prompt: apiSourceManual.ask,
-      hint: apiSourceManual.hint,
-      placeholder: "my-service",
-      validate: validateServiceName,
-      reaction: v => `wiring to ${v}`,
-      display: v => v,
-      recap: v => `→ ${v}`,
-      skipIf: answers => answers["apiSource"] !== "__other__",
-    })
-  } else {
-    steps.push({
-      kind: "text",
-      id: "apiSourceManual",
-      label: "service",
-      prompt: apiSourceManual.ask,
-      hint: apiSourceManual.hint,
-      placeholder: "my-service",
-      validate: validateServiceName,
-      reaction: v => `wiring to ${v}`,
-      display: v => v,
-      recap: v => `→ ${v}`,
-    })
-  }
-
-  steps.push({
-    kind: "text",
-    id: "port",
-    label: "port",
-    prompt: port.ask,
-    hint: port.hint,
-    placeholder: DEFAULT_PORTS[appType],
-    validate: validatePort,
-    reaction: v => `port ${v}`,
-    display: v => v,
-    recap: v => `port ${v}`,
-  })
-
-  return steps
 }
 
 function answersToApp(
@@ -186,8 +157,9 @@ function answersToApp(
   answers: Record<string, unknown>,
 ): AppEntry {
   const name = answers["name"] as string
-  const portRaw = (answers["port"] as string) || DEFAULT_PORTS[appType]
-  const port = portRaw
+  const port = (answers["port"] as string) || DEFAULT_PORTS[appType]
+  const linksRaw = answers["links"]
+  const links = Array.isArray(linksRaw) ? (linksRaw as string[]) : []
 
   if (appType === "service") {
     return {
@@ -199,23 +171,19 @@ function answersToApp(
     }
   }
 
-  const apiSource = answers["apiSource"] === "__other__" || !answers["apiSource"]
-    ? answers["apiSourceManual"] as string
-    : answers["apiSource"] as string
-
   return {
     name,
     type: appType,
     dirName: appType === "portal" ? `portal-${name}` : `backoffice-${name}`,
     port,
-    apiSource,
+    apiSource: links[0],
   }
 }
 
 type Phase =
   | { kind: "menu" }
   | { kind: "wizard"; appType: AppType }
-  | { kind: "generating"; app: AppEntry }
+  | { kind: "generating"; app: AppEntry; picks: string[] }
   | { kind: "installing" }
   | { kind: "done" }
   | { kind: "error"; message: string }
@@ -242,9 +210,12 @@ function GenApp({ projectRoot, initialConfig, typeArg }: AppProps) {
       generateApp(projectRoot, TEMPLATES_DIR, phase.app, next)
       regenerateDocker(projectRoot, TEMPLATES_DIR, next)
       writeProjectConfig(projectRoot, next)
+      linkAll(projectRoot, next, phase.app, phase.picks)
       setConfig(next)
       setAddedApps(prev => [...prev, phase.app])
-      setPhase({ kind: "menu" })
+      // when user invoked `vrn gen <type>`, finish after one app instead of
+      // dropping back into the picker.
+      setPhase(typeArg ? { kind: "installing" } : { kind: "menu" })
     } catch (err) {
       setPhase({ kind: "error", message: (err as Error).message })
     }
@@ -301,7 +272,9 @@ function GenApp({ projectRoot, initialConfig, typeArg }: AppProps) {
         steps={steps}
         onComplete={answers => {
           const app = answersToApp(phase.appType, answers)
-          setPhase({ kind: "generating", app })
+          const raw = answers["links"]
+          const picks = Array.isArray(raw) ? (raw as string[]) : []
+          setPhase({ kind: "generating", app, picks })
         }}
         onCancel={() => setPhase({ kind: "done" })}
       />
@@ -371,17 +344,74 @@ function isActivePhase(phase: Phase): boolean {
     || phase.kind === "error"
 }
 
+// ─── Flag parsing ─────────────────────────────────────────────────────
+
+function parseFlags(argv: string[]): Record<string, string> {
+  const flags: Record<string, string> = {}
+  for (let i = 0; i < argv.length - 1; i++) {
+    const k = argv[i]!
+    const v = argv[i + 1]!
+    if (k.startsWith("--") && !v.startsWith("--")) {
+      flags[k.slice(2)] = v
+      i++
+    }
+  }
+  return flags
+}
+
+// ─── Non-interactive run ───────────────────────────────────────────────
+
+function parseLinks(flags: Record<string, string>): string[] | undefined {
+  const raw = flags["links"] ?? flags["api-source"]
+  if (raw === undefined) return undefined
+  return raw.split(",").map(s => s.trim()).filter(Boolean)
+}
+
+function runNonInteractive(
+  appType: AppType,
+  flags: Record<string, string>,
+  projectRoot: string,
+  config: ProjectConfig,
+): void {
+  try {
+    const app = runGen(
+      {
+        type: appType,
+        name: flags["name"]!,
+        framework: flags["framework"] as "elysia" | "litestar" | undefined,
+        port: flags["port"],
+        links: parseLinks(flags),
+      },
+      projectRoot,
+      config,
+    )
+    process.stdout.write(`done — ${app.dirName}\n`)
+  } catch (err) {
+    process.stderr.write(`error: ${(err as Error).message}\n`)
+    process.exit(1)
+  }
+}
+
+// ─── Entry point ───────────────────────────────────────────────────────
+
 export async function run(): Promise<void> {
   const projectRoot = requireProjectRoot()
   const config = readProjectConfig(projectRoot)
   const validTypes = new Set<AppType>(["service", "portal", "backoffice"])
   const typeArg = process.argv[3]
-  const initial: AppType | undefined = typeArg && validTypes.has(typeArg as AppType)
+  const appType: AppType | undefined = typeArg && validTypes.has(typeArg as AppType)
     ? (typeArg as AppType)
     : undefined
 
+  const flags = parseFlags(process.argv.slice(4))
+
+  if (appType && flags["name"]) {
+    runNonInteractive(appType, flags, projectRoot, config)
+    return
+  }
+
   const { waitUntilExit } = render(
-    <GenApp projectRoot={projectRoot} initialConfig={config} typeArg={initial} />
+    <GenApp projectRoot={projectRoot} initialConfig={config} typeArg={appType} />
   )
   await waitUntilExit()
 }

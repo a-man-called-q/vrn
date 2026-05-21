@@ -1,4 +1,4 @@
-const SKILLS: Record<string, string> = {
+export const SKILLS: Record<string, string> = {
   "add-route": `
 Read the paths from the \`vrn context\` output injected above, then follow the correct path.
 
@@ -112,15 +112,10 @@ Adding an env var touches multiple files. Read vrn context above to know which a
 `.trim(),
 
   "link-services": `
-Read vrn context above to confirm both services exist, then:
+Read vrn context above to confirm both services exist, then use the \`link_apps\` MCP tool.
+After linking, use the typed client in the source service:
 
-### 1. Register the link
-\`\`\`bash
-bunx vrn link <source-service> <target-service>
-\`\`\`
-This updates vrn.yaml and adds the client package as a dependency in the source service.
-
-### 2. Use the typed client (Elysia source)
+### Elysia source
 \`\`\`ts
 import { treaty } from '@elysiajs/eden'
 import type { App } from '@workspace/{target}-service-client'
@@ -129,7 +124,7 @@ const client = treaty<App>('http://localhost:{target-port}')
 const { data, error } = await client.users({ id: userId }).get()
 \`\`\`
 
-### 3. Use the typed client (Litestar source)
+### Litestar source
 \`\`\`python
 import httpx
 async with httpx.AsyncClient(base_url="http://localhost:{target-port}") as client:

@@ -186,14 +186,9 @@ const genPort: StepVoice = {
   hint: "default works if nothing else is using it",
 }
 
-const genApiSource: StepVoice = {
-  ask: "which service does this talk to?",
-  hint: "pick the backend it calls",
-}
-
-const genApiSourceManual: StepVoice = {
-  ask: "service name?",
-  hint: "no services registered yet — type one",
+const genLinks: StepVoice = {
+  ask: "which services should it talk to?",
+  hint: "space to toggle, enter to confirm — pick zero or more",
 }
 
 const genGoAgain: ConfirmVoice = {
@@ -213,8 +208,7 @@ export const gen = {
   pickType: genPickType,
   framework: genFramework,
   port: genPort,
-  apiSource: genApiSource,
-  apiSourceManual: genApiSourceManual,
+  links: genLinks,
   goAgain: genGoAgain,
   appName: {
     ask: "what should it be called?",
@@ -240,15 +234,15 @@ export const gen = {
 
 export const link = {
   intro: (src: string, tgt: string) => `wiring ${src} → ${tgt}`,
-  success: (src: string, tgt: string) => `${src}-service is now wired to ${tgt}-service-client`,
-  selfLink: "a service can't link to itself",
+  success: (src: string, tgt: string) => `${src} is now wired to ${tgt}-service-client`,
+  selfLink: "an app can't link to itself",
   alreadyLinked: (src: string, tgt: string) => `${src} already talks to ${tgt} — nothing to do`,
   sourceNotFound: (name: string) => `i don't see "${name}" in vrn.yaml`,
-  targetNotFound: (name: string) => `i don't see "${name}" in vrn.yaml`,
+  targetNotFound: (name: string) => `i don't see service "${name}" in vrn.yaml`,
   addedDep: (pkg: string, path: string) => `added ${pkg} to ${path}`,
   installing: "installing deps",
   done: "linked",
-  usage: "usage: vrn link <source-service> <target-service>",
+  usage: "usage: vrn link <source-app> <target-service>",
 }
 
 export const sync = {

@@ -86,5 +86,16 @@ export function buildProjectContext(projectRoot: string, config: ProjectConfig):
     }
   }
 
+  lines.push(
+    ``,
+    `## Skills`,
+    `Call \`get_skill\` with one of these names for step-by-step instructions:`,
+    `- add-route      add an API route to an existing service`,
+    `- add-page       add a page to a portal or backoffice`,
+    `- add-model      add a database table and run the migration`,
+    `- add-env-var    add an environment variable across all affected files`,
+    `- link-services  wire two services together (use link_apps tool to execute)`,
+  )
+
   return lines.join("\n")
 }
