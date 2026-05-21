@@ -2,3 +2,9 @@ moon = "{{moonVersion}}"
 {{#if (eq packageManager "bun")}}
 bun = "{{packageManagerVersion}}"
 {{/if}}
+{{#if pythonManager}}
+{{pythonManager}} = "{{pythonManagerVersion}}"
+{{/if}}
+{{#if rustManager}}
+rust = "{{rustManagerVersion}}"
+{{/if}}

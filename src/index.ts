@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
-import { join, dirname } from "node:path"
+import { join, dirname, basename } from "node:path"
+
+const binName = basename(process.argv[1] ?? "")
+const isCreateMode = binName.startsWith("create-")
 
 const command = process.argv[2]
 
@@ -11,24 +14,28 @@ if (command === "--version" || command === "-v") {
   process.exit(0)
 }
 
+const HELP = [
+  "vrn — SaaS Monorepo Scaffolding",
+  "",
+  "Usage:",
+  "  bunx create-vrn [name]                     Create a new project",
+  "  vrn create [name]                          Create a new project",
+  "  vrn gen [service|portal|backoffice]        Add an app to an existing project",
+  "  vrn link <source> <target>                 Link two services together",
+  "  vrn sync                                   Sync project with vrn.yaml",
+  "  vrn add <addon>                            Add a feature addon (subscription, ...)",
+  "  vrn context                                Print project state (AI-friendly)",
+  "  vrn doctor                                 Check system requirements",
+  "  vrn --version                              Print version",
+].join("\n")
+
 if (command === "--help" || command === "-h") {
-  console.log([
-    "create-vrn — SaaS Monorepo Scaffolding",
-    "",
-    "Usage:",
-    "  bun create vrn [name]                      Create a new project",
-    "  bunx vrn gen [service|portal|backoffice]   Add an app to an existing project",
-    "  bunx vrn link <source> <target>            Link two services together",
-    "  bunx vrn sync                              Sync project with vrn.yaml (generate missing apps)",
-    "  bunx vrn add <addon>                       Add a feature addon (subscription, ...)",
-    "  bunx vrn context                           Print project state (AI-friendly)",
-    "  bunx vrn doctor                            Check system requirements",
-    "  bunx vrn --version                         Print version",
-  ].join("\n"))
+  console.log(HELP)
   process.exit(0)
 }
 
 const handlers: Record<string, () => Promise<void>> = {
+  create:  () => import("./commands/create.js").then(m => m.run()),
   gen:     () => import("./commands/gen.js").then(m => m.run()),
   link:    () => import("./commands/link.js").then(m => m.run()),
   doctor:  () => import("./commands/doctor.js").then(m => m.run()),
@@ -39,12 +46,14 @@ const handlers: Record<string, () => Promise<void>> = {
   add:     () => import("./commands/add.js").then(m => m.run()),
 }
 
-if (command && command in handlers) {
-  await handlers[command]()
-} else if (!command || !command.startsWith("-")) {
+if (isCreateMode) {
   await import("./commands/create.js").then(m => m.run())
+} else if (command && command in handlers) {
+  await handlers[command]()
+} else if (!command) {
+  console.log(HELP)
 } else {
-  console.error(`Unknown option: ${command}. Run 'bunx vrn --help' for usage.`)
+  console.error(`Unknown command: ${command}. Run 'vrn --help' for usage.`)
   process.exit(1)
 }
 

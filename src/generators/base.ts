@@ -12,8 +12,16 @@ export function generateBase(
     projectName: config.name,
     authMode: config.useZitadel ? "zitadel" : "local",
     multiTenant: config.multiTenant ?? false,
-    packageManager: config.packageManager,
-    packageManagerVersion: config.packageManagerVersion,
+    packageManager: config.packageManagers.js.name,
+    packageManagerVersion: config.packageManagers.js.version,
+    ...(config.packageManagers.python && {
+      pythonManager: config.packageManagers.python.name,
+      pythonManagerVersion: config.packageManagers.python.version,
+    }),
+    ...(config.packageManagers.rust && {
+      rustManager: config.packageManagers.rust.name,
+      rustManagerVersion: config.packageManagers.rust.version,
+    }),
     moonVersion: config.moonVersion,
   }
   copyTemplateDir(join(templatesDir, "base"), targetDir, templateData)

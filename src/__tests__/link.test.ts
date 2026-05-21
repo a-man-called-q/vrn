@@ -22,10 +22,11 @@ function makeServicePkg(dir: string, dirName: string, extra: Record<string, unkn
 
 const BASE_CONFIG: ProjectConfig = {
   name: "test-app",
-  packageManager: "bun",
-  packageManagerVersion: "1.3.10",
+  packageManagers: { js: { name: "bun", version: "1.3.10" } },
   moonVersion: "2.1.4",
   useZitadel: false,
+  multiTenant: false,
+  addons: [],
   apps: [],
 }
 

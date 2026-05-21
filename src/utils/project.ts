@@ -4,8 +4,27 @@ import yaml from "yaml"
 import { ProjectConfig } from "../types.js"
 
 const MANIFEST_FILE = "vrn.yaml"
-const VALID_PACKAGE_MANAGERS = new Set(["bun", "npm", "pnpm", "yarn"])
+const VALID_JS_PMS = new Set(["bun", "npm", "pnpm", "yarn"])
+const VALID_PY_PMS = new Set(["uv", "pip"])
+const VALID_RUST_PMS = new Set(["cargo"])
 const NAME_RE = /^[a-z][a-z0-9-]*$/
+
+function validatePmEntry(
+  entry: unknown,
+  field: string,
+  validNames: Set<string>,
+): asserts entry is { name: string; version: string } {
+  if (!entry || typeof entry !== "object") {
+    throw new Error(`${MANIFEST_FILE}: '${field}' must be an object with 'name' and 'version'.`)
+  }
+  const e = entry as { name?: unknown; version?: unknown }
+  if (typeof e.name !== "string" || !validNames.has(e.name)) {
+    throw new Error(`${MANIFEST_FILE}: invalid '${field}.name' (must be one of: ${[...validNames].join(", ")}).`)
+  }
+  if (typeof e.version !== "string" || e.version.trim() === "") {
+    throw new Error(`${MANIFEST_FILE}: '${field}.version' must be a non-empty string.`)
+  }
+}
 
 export function findProjectRoot(startDir: string = process.cwd()): string | null {
   let dir = startDir
@@ -26,8 +45,15 @@ export function readProjectConfig(projectRoot: string): ProjectConfig {
   if (typeof config.name !== "string" || !NAME_RE.test(config.name)) {
     throw new Error(`${MANIFEST_FILE}: invalid 'name' (must match ${NAME_RE}).`)
   }
-  if (!VALID_PACKAGE_MANAGERS.has(config.packageManager)) {
-    throw new Error(`${MANIFEST_FILE}: invalid 'packageManager' (must be one of: ${[...VALID_PACKAGE_MANAGERS].join(", ")}).`)
+  if (!config.packageManagers || typeof config.packageManagers !== "object") {
+    throw new Error(`${MANIFEST_FILE}: missing 'packageManagers' object (with 'js', optional 'python', optional 'rust').`)
+  }
+  validatePmEntry(config.packageManagers.js, "packageManagers.js", VALID_JS_PMS)
+  if (config.packageManagers.python !== undefined) {
+    validatePmEntry(config.packageManagers.python, "packageManagers.python", VALID_PY_PMS)
+  }
+  if (config.packageManagers.rust !== undefined) {
+    validatePmEntry(config.packageManagers.rust, "packageManagers.rust", VALID_RUST_PMS)
   }
   for (const app of config.apps) {
     if (typeof app?.name !== "string" || !NAME_RE.test(app.name)) {

@@ -1,11 +1,27 @@
 $schema: 'https://moonrepo.dev/schemas/toolchain.json'
 
+{{#if pythonManager}}
+python:
+  version: '3.12.0'
+
+{{#if (eq pythonManager "uv")}}
+uv:
+  version: '{{pythonManagerVersion}}'
+
+{{/if}}
+{{else}}
 {{#if (eq serviceFramework "litestar")}}
 python:
   version: '3.12.0'
 
 uv:
   version: '0.5.18'
+
+{{/if}}
+{{/if}}
+{{#if rustManager}}
+rust:
+  version: '{{rustManagerVersion}}'
 
 {{/if}}
 {{#if (eq packageManager "bun")}}

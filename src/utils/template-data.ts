@@ -42,8 +42,16 @@ export function buildTemplateData(appEntry: AppEntry, config: ProjectConfig): Te
     apiPort: portFor(appEntry, config, "service", DEFAULT_PORTS.service),
     portalPort: portFor(appEntry, config, "portal", DEFAULT_PORTS.portal),
     backofficePort: portFor(appEntry, config, "backoffice", DEFAULT_PORTS.backoffice),
-    packageManager: config.packageManager,
-    packageManagerVersion: config.packageManagerVersion,
+    packageManager: config.packageManagers.js.name,
+    packageManagerVersion: config.packageManagers.js.version,
+    ...(config.packageManagers.python && {
+      pythonManager: config.packageManagers.python.name,
+      pythonManagerVersion: config.packageManagers.python.version,
+    }),
+    ...(config.packageManagers.rust && {
+      rustManager: config.packageManagers.rust.name,
+      rustManagerVersion: config.packageManagers.rust.version,
+    }),
     moonVersion: config.moonVersion,
   }
 }

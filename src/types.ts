@@ -1,11 +1,26 @@
-export type PackageManager = "bun" | "npm" | "pnpm" | "yarn"
+export type JsPackageManager = "bun" | "npm" | "pnpm" | "yarn"
+export type PythonPackageManager = "uv" | "pip"
+export type RustPackageManager = "cargo"
 export type AuthMode = "zitadel" | "local"
 export type ServiceFramework = "elysia" | "litestar"
 
+// Kept for backwards-compat with template-data consumers.
+export type PackageManager = JsPackageManager
+
+export interface PackageManagerEntry<Name extends string = string> {
+  name: Name
+  version: string
+}
+
+export interface PackageManagers {
+  js: PackageManagerEntry<JsPackageManager>
+  python?: PackageManagerEntry<PythonPackageManager>
+  rust?: PackageManagerEntry<RustPackageManager>
+}
+
 export interface ProjectConfig {
   name: string
-  packageManager: PackageManager
-  packageManagerVersion: string
+  packageManagers: PackageManagers
   moonVersion: string
   useZitadel: boolean
   multiTenant: boolean
@@ -29,8 +44,12 @@ export interface BaseTemplateData {
   projectName: string
   authMode: AuthMode
   multiTenant: boolean
-  packageManager: PackageManager
+  packageManager: JsPackageManager
   packageManagerVersion: string
+  pythonManager?: PythonPackageManager
+  pythonManagerVersion?: string
+  rustManager?: RustPackageManager
+  rustManagerVersion?: string
   moonVersion: string
 }
 

@@ -1,36 +1,87 @@
-import * as p from "@clack/prompts"
-import { execSync, spawnSync } from "node:child_process"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { join } from "node:path"
 import { homedir } from "node:os"
-import { PackageManager } from "../types.js"
+import {
+  JsPackageManager,
+  PythonPackageManager,
+  RustPackageManager,
+} from "../types.js"
 
-export function unwrap<T>(value: T | symbol): T {
-  if (p.isCancel(value)) { p.cancel("Cancelled."); process.exit(0) }
-  return value as T
+const execFileP = promisify(execFile)
+
+export const JS_CANDIDATES: JsPackageManager[] = ["bun", "pnpm", "yarn", "npm"]
+export const PYTHON_CANDIDATES: PythonPackageManager[] = ["uv", "pip"]
+export const RUST_CANDIDATES: RustPackageManager[] = ["cargo"]
+
+// Fallback version used only when no JS PM is detected at all.
+export const NPM_FALLBACK_VERSION = "10.9.2"
+
+export type ProbeOneResult =
+  | { kind: "found"; version: string }
+  | { kind: "missing" }
+  | { kind: "timeout" }
+  | { kind: "error"; message: string }
+
+export async function probeOne(
+  cmd: string,
+  opts: { timeout?: number; signal?: AbortSignal } = {},
+): Promise<ProbeOneResult> {
+  return probeVersion(cmd, { timeout: opts.timeout ?? 2000, signal: opts.signal })
 }
 
-export function detectPmVersion(pm: PackageManager): string {
-  const defaults: Record<PackageManager, string> = {
-    bun: "1.3.10",
-    npm: "10.9.2",
-    pnpm: "10.0.0",
-    yarn: "4.6.0",
-  }
+async function probeVersion(
+  cmd: string,
+  opts: { timeout: number; signal?: AbortSignal } = { timeout: 2000 },
+): Promise<ProbeOneResult> {
   try {
-    const raw = execSync(`${pm} --version`, { stdio: "pipe", timeout: 3000 }).toString().trim()
+    const { stdout } = await execFileP(cmd, ["--version"], {
+      timeout: opts.timeout,
+      signal: opts.signal,
+    })
+    const raw = stdout.trim()
     const match = raw.match(/\d+\.\d+\.\d+/)
-    return match ? match[0] : defaults[pm]
-  } catch {
-    return defaults[pm]
+    return { kind: "found", version: match ? match[0] : raw.split("\n")[0] }
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException & { killed?: boolean; signal?: string; name?: string }
+    if (e.code === "ENOENT") return { kind: "missing" }
+    if (e.killed || e.signal === "SIGTERM" || e.name === "AbortError") return { kind: "timeout" }
+    return { kind: "error", message: e.message ?? "unknown error" }
   }
+}
+
+export interface Probed<Name extends string> {
+  name: Name
+  version: string
+}
+
+export interface ProbeBreakdown<Name extends string> {
+  found: Probed<Name>[]
+  timedOut: Name[]
+  errored: { name: Name; message: string }[]
+}
+
+export async function probeCandidates<Name extends string>(
+  candidates: readonly Name[],
+): Promise<ProbeBreakdown<Name>> {
+  const results = await Promise.all(
+    candidates.map(async name => ({ name, res: await probeVersion(name, { timeout: 2000 }) })),
+  )
+  const breakdown: ProbeBreakdown<Name> = { found: [], timedOut: [], errored: [] }
+  for (const { name, res } of results) {
+    if (res.kind === "found") breakdown.found.push({ name, version: res.version })
+    else if (res.kind === "timeout") breakdown.timedOut.push(name)
+    else if (res.kind === "error") breakdown.errored.push({ name, message: res.message })
+    // "missing" → silently skipped
+  }
+  return breakdown
 }
 
 const MOON_CACHE_FILE = join(homedir(), ".cache", "create-vrn", "moon-version.json")
-const MOON_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
+const MOON_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
 export async function fetchLatestMoonVersion(): Promise<string> {
-  // Serve from cache if fresh
   if (existsSync(MOON_CACHE_FILE)) {
     try {
       const cached = JSON.parse(readFileSync(MOON_CACHE_FILE, "utf-8")) as {
@@ -61,42 +112,4 @@ export async function fetchLatestMoonVersion(): Promise<string> {
   } catch {
     return "2.1.4"
   }
-}
-
-export function runInstall(projectRoot: string, packageManager: string): void {
-  const spinner = p.spinner()
-  spinner.start("Installing dependencies...")
-  const result = spawnSync(packageManager, ["install"], {
-    cwd: projectRoot,
-    stdio: "pipe",
-  })
-  if (result.status === 0) {
-    spinner.stop("Dependencies installed!")
-  } else {
-    spinner.stop(`Install failed — run '${packageManager} install' manually.`)
-  }
-}
-
-export async function detectOrAskPackageManager(): Promise<PackageManager> {
-  const candidates: PackageManager[] = ["bun", "pnpm", "yarn", "npm"]
-  const available: PackageManager[] = []
-  for (const pm of candidates) {
-    try {
-      execSync(`${pm} --version`, { stdio: "pipe", timeout: 2000 })
-      available.push(pm)
-    } catch { /* not installed */ }
-  }
-
-  if (available.length === 1) return available[0]
-
-  return unwrap(await p.select<PackageManager>({
-    message: "Package manager",
-    options: [
-      { value: "bun", label: "Bun" },
-      { value: "pnpm", label: "pnpm" },
-      { value: "npm", label: "npm" },
-      { value: "yarn", label: "Yarn" },
-    ],
-    initialValue: available.includes("bun") ? "bun" : (available[0] ?? "bun"),
-  }))
 }

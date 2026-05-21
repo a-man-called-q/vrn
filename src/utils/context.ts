@@ -11,7 +11,9 @@ export function buildProjectContext(projectRoot: string, config: ProjectConfig):
     ``,
     `auth: ${authMode}`,
     `multiTenant: ${multiTenant}`,
-    `packageManager: ${config.packageManager}`,
+    `packageManager (js): ${config.packageManagers.js.name}`,
+    ...(config.packageManagers.python ? [`packageManager (python): ${config.packageManagers.python.name}`] : []),
+    ...(config.packageManagers.rust ? [`packageManager (rust): ${config.packageManagers.rust.name}`] : []),
     ``,
   ]
 

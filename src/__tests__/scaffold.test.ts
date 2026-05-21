@@ -12,10 +12,11 @@ const TEMPLATES_DIR = new URL("../../templates", import.meta.url).pathname
 
 const BASE_CONFIG = {
   name: "test-app",
-  packageManager: "bun" as const,
-  packageManagerVersion: "1.3.10",
+  packageManagers: { js: { name: "bun" as const, version: "1.3.10" } },
   moonVersion: "2.1.4",
   useZitadel: false,
+  multiTenant: false,
+  addons: [],
   apps: [],
 }
 
@@ -72,6 +73,8 @@ describe("generateService — elysia + local auth", () => {
       packageManager: "bun",
       packageManagerVersion: "1.3.10",
       moonVersion: "2.1.4",
+      multiTenant: false,
+      subscription: false,
     })
   })
 
@@ -132,6 +135,8 @@ describe("generateService — elysia + zitadel", () => {
       packageManager: "bun",
       packageManagerVersion: "1.3.10",
       moonVersion: "2.1.4",
+      multiTenant: false,
+      subscription: false,
     })
   })
 
@@ -170,6 +175,8 @@ describe("generateService — litestar", () => {
       packageManager: "bun",
       packageManagerVersion: "1.3.10",
       moonVersion: "2.1.4",
+      multiTenant: false,
+      subscription: false,
     })
   })
 
@@ -211,6 +218,8 @@ describe("generatePortal — local auth", () => {
       packageManager: "bun",
       packageManagerVersion: "1.3.10",
       moonVersion: "2.1.4",
+      multiTenant: false,
+      subscription: false,
     })
   })
 
@@ -258,6 +267,8 @@ describe("generatePortal — zitadel auth", () => {
       packageManager: "bun",
       packageManagerVersion: "1.3.10",
       moonVersion: "2.1.4",
+      multiTenant: false,
+      subscription: false,
     })
   })
 
