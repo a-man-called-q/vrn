@@ -9,7 +9,7 @@ import {
   copyFileSync,
 } from "node:fs"
 import { join, dirname, extname } from "node:path"
-import { registerHelpers } from "./helpers.js"
+import { registerHelpers } from "./handlebars.js"
 
 // Register all helpers once at import time
 registerHelpers()

@@ -35,19 +35,19 @@ if (command === "--help" || command === "-h") {
 }
 
 const handlers: Record<string, () => Promise<void>> = {
-  create:  () => import("./commands/create.js").then(m => m.run()),
-  gen:     () => import("./commands/gen.js").then(m => m.run()),
-  link:    () => import("./commands/link.js").then(m => m.run()),
-  doctor:  () => import("./commands/doctor.js").then(m => m.run()),
+  create:  () => import("./commands/create/index.js").then(m => m.run()),
+  gen:     () => import("./commands/gen/index.js").then(m => m.run()),
+  link:    () => import("./commands/link/index.js").then(m => m.run()),
+  doctor:  () => import("./commands/doctor/index.js").then(m => m.run()),
   context: () => import("./commands/context.js").then(m => m.run()),
-  skill:   () => import("./commands/skill.js").then(m => m.run()),
+  skill:   () => import("./commands/skill/index.js").then(m => m.run()),
   mcp:     () => import("./mcp.js").then(m => m.runMcp()),
-  sync:    () => import("./commands/sync.js").then(m => m.run()),
-  add:     () => import("./commands/add.js").then(m => m.run()),
+  sync:    () => import("./commands/sync/index.js").then(m => m.run()),
+  add:     () => import("./commands/add/index.js").then(m => m.run()),
 }
 
 if (isCreateMode) {
-  await import("./commands/create.js").then(m => m.run())
+  await import("./commands/create/index.js").then(m => m.run())
 } else if (command && command in handlers) {
   await handlers[command]()
 } else if (!command) {

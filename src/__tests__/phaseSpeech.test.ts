@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
-import { phaseSpeech as createPhaseSpeech } from "../commands/create.js"
-import { phaseSpeech as linkPhaseSpeech } from "../commands/link.js"
-import { phaseSpeech as addPhaseSpeech } from "../commands/add.js"
+import { phaseSpeech as createPhaseSpeech } from "../commands/create/phase-speech.js"
+import { phaseSpeech as linkPhaseSpeech } from "../commands/link/phase-speech.js"
+import { phaseSpeech as addPhaseSpeech } from "../commands/add/phase-speech.js"
 
 describe("create phaseSpeech", () => {
   test("probe phase asks verney to look around and shows a status line", () => {

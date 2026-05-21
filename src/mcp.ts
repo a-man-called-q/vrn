@@ -3,10 +3,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js"
 import { findProjectRoot, readProjectConfig } from "./utils/project.js"
 import { buildProjectContext } from "./utils/context.js"
-import { runGen, type AppType } from "./utils/gen-runner.js"
+import { runGen, type AppType } from "./actions/gen.js"
 import { linkServices } from "./actions/link.js"
-import { runInstallQuiet } from "./utils/install.js"
-import { SKILLS } from "./commands/skill.js"
+import { runInstallQuiet } from "./utils/pm.js"
+import { SKILLS } from "./commands/skill/content.js"
 
 function getProjectRoot() {
   const root = findProjectRoot()

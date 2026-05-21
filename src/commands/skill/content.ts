@@ -1,3 +1,7 @@
+// Skill content — long-form instructions returned by `vrn skill <name>`
+// and the `get_skill` MCP tool. Pure data, kept separate from the entry
+// so callers can import the registry without pulling in render code.
+
 export const SKILLS: Record<string, string> = {
   "add-route": `
 Read the paths from the \`vrn context\` output injected above, then follow the correct path.
@@ -133,22 +137,4 @@ async with httpx.AsyncClient(base_url="http://localhost:{target-port}") as clien
 
 The target port is listed in vrn context. The target service URL should come from an env var in production — check \`.env.example\` for the variable name.
 `.trim(),
-}
-
-export function run(): void {
-  const skillName = process.argv[3]
-
-  if (!skillName) {
-    console.log("Available skills:")
-    for (const name of Object.keys(SKILLS)) console.log(`  ${name}`)
-    process.exit(0)
-  }
-
-  if (!Object.hasOwn(SKILLS, skillName)) {
-    console.error(`Unknown skill: ${skillName}`)
-    console.error(`Available: ${Object.keys(SKILLS).join(", ")}`)
-    process.exit(1)
-  }
-
-  console.log(SKILLS[skillName])
 }

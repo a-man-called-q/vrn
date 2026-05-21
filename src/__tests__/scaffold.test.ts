@@ -6,7 +6,7 @@ import { generateBase } from "../generators/base.js"
 import { generateService } from "../generators/service.js"
 import { generatePortal } from "../generators/portal.js"
 import { generateBackoffice } from "../generators/backoffice.js"
-import { regenerateDocker } from "../generators/docker.js"
+import { regenerateDocker } from "../generators/docker/index.js"
 
 const TEMPLATES_DIR = new URL("../../templates", import.meta.url).pathname
 

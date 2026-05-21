@@ -1,5 +1,5 @@
 import stringWidth from "string-width"
-import type { BubbleLine } from "./Speech.js"
+import type { BubbleLine } from "./speech.js"
 
 // Display width — handles emoji, CJK, ANSI escape codes.
 export const width = stringWidth

@@ -1,9 +1,9 @@
 import { generateApp } from "../generators/index.js"
-import { regenerateDocker } from "../generators/docker.js"
-import { writeProjectConfig } from "./project.js"
-import { runInstallQuiet } from "./install.js"
-import { resolveTemplatesDir } from "./paths.js"
-import { linkAll } from "../actions/link.js"
+import { regenerateDocker } from "../generators/docker/index.js"
+import { writeProjectConfig } from "../utils/project.js"
+import { runInstallQuiet } from "../utils/pm.js"
+import { resolveTemplatesDir } from "../utils/paths.js"
+import { linkAll } from "./link.js"
 import type { AppEntry, ProjectConfig, ServiceFramework } from "../types.js"
 
 const TEMPLATES_DIR = resolveTemplatesDir(import.meta.url)

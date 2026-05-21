@@ -1,19 +1,16 @@
 import { useEffect, useState } from "react"
 import { render, useApp } from "ink"
 
-import { requireProjectRoot, readProjectConfig } from "../utils/project.js"
-import { runInstallQuiet } from "../utils/install.js"
-import { linkServices } from "../actions/link.js"
-import { Bubble, type Speech } from "../ui/index.js"
-import { verney } from "../personality/index.js"
-import type { ProjectConfig } from "../types.js"
+import { requireProjectRoot, readProjectConfig } from "../../utils/project.js"
+import { runInstallQuiet } from "../../utils/pm.js"
+import { linkServices } from "../../actions/link.js"
+import { Bubble, useExitOnPhase } from "../../ui/index.js"
+import { verney } from "../../personality/index.js"
+import type { ProjectConfig } from "../../types.js"
 
-type Phase =
-  | { kind: "linking" }
-  | { kind: "installing"; addedDep: string; clientPkg: string; servicePkgPath: string }
-  | { kind: "done"; addedDep?: { clientPkg: string; servicePkgPath: string } }
-  | { kind: "warn"; message: string }
-  | { kind: "error"; message: string }
+import { phaseSpeech, isActivePhase, type Phase } from "./phase-speech.js"
+
+export { phaseSpeech } from "./phase-speech.js"
 
 interface AppProps {
   projectRoot: string
@@ -60,49 +57,12 @@ function LinkApp({ projectRoot, config, source, target }: AppProps) {
     })
   }, [phase.kind])
 
-  useEffect(() => {
-    if (phase.kind === "done" || phase.kind === "warn" || phase.kind === "error") {
-      const t = setTimeout(() => exit(), 50)
-      return () => clearTimeout(t)
-    }
-  }, [phase.kind, exit])
+  useExitOnPhase(
+    phase.kind === "done" || phase.kind === "warn" || phase.kind === "error",
+    exit,
+  )
 
   return <Bubble active={isActivePhase(phase)} speech={phaseSpeech(phase, source, target)} />
-}
-
-export function phaseSpeech(phase: Phase, source: string, target: string): Speech {
-  switch (phase.kind) {
-    case "linking":
-      return {
-        ask: verney.link.intro(source, target),
-        status: "wiring it up",
-      }
-    case "installing":
-      return {
-        ask: verney.link.intro(source, target),
-        details: [verney.link.addedDep(phase.clientPkg, phase.servicePkgPath)],
-        status: verney.link.installing,
-      }
-    case "warn":
-      return { warn: phase.message }
-    case "error":
-      return { error: phase.message }
-    case "done": {
-      const details: string[] = []
-      if (phase.addedDep) {
-        details.push(verney.link.addedDep(phase.addedDep.clientPkg, phase.addedDep.servicePkgPath))
-      }
-      return {
-        ask: verney.link.intro(source, target),
-        details,
-        closing: verney.link.success(source, target),
-      }
-    }
-  }
-}
-
-function isActivePhase(phase: Phase): boolean {
-  return phase.kind === "linking" || phase.kind === "installing"
 }
 
 export async function run(): Promise<void> {

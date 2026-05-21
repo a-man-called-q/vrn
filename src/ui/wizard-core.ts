@@ -2,7 +2,7 @@
 // React-free — testable in isolation. Wizard.tsx wraps these in a hook
 // and renders the result.
 
-import type { Speech } from "./Speech.js"
+import type { Speech } from "./speech.js"
 
 // ─── Step shape ───────────────────────────────────────────────────────
 

@@ -1,22 +1,30 @@
-import * as content from "./verney.js"
-import type { StepVoice } from "./voice.js"
+// Aggregates the per-command voice files into a single `verney` namespace
+// and exposes the lookup helpers (reactionFor/hoverFor/recapFor/greet/ack/…)
+// that callers use to pull text in a type-safe way.
 
-export type { StepVoice, ConfirmVoice, ConfirmKey } from "./voice.js"
+import * as create from "./voices/create.js"
+import { gen } from "./voices/gen.js"
+import { link } from "./voices/link.js"
+import { sync } from "./voices/sync.js"
+import { add } from "./voices/add.js"
+import { doctor } from "./voices/doctor.js"
+import { events } from "./voices/events.js"
+import type { StepVoice } from "./types.js"
 
-// `verney` is the namespaced view of all content — same shape callers
-// expect (verney.steps.auth, verney.scaffolding, ...).
+export type { StepVoice, ConfirmVoice, ConfirmKey } from "./types.js"
+
 export const verney = {
-  greetings: content.greetings,
-  steps: content.steps,
-  dyn: content.dyn,
-  scaffolding: content.scaffolding,
-  jsPmProbe: content.jsPmProbe,
-  gen: content.gen,
-  link: content.link,
-  sync: content.sync,
-  add: content.add,
-  doctor: content.doctor,
-  events: content.events,
+  greetings: create.greetings,
+  steps: create.steps,
+  dyn: create.dyn,
+  scaffolding: create.scaffolding,
+  jsPmProbe: create.jsPmProbe,
+  gen,
+  link,
+  sync,
+  add,
+  doctor,
+  events,
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────
@@ -27,18 +35,18 @@ export function pick<T>(arr: readonly T[]): T {
 
 export function greet(name?: string): string {
   if (name) {
-    const line = pick(content.greetings.withName)
+    const line = pick(create.greetings.withName)
     return line(name)
   }
-  return pick(content.greetings.withoutName)
+  return pick(create.greetings.withoutName)
 }
 
 export function ack(): string {
-  return pick(content.events.ack)
+  return pick(events.ack)
 }
 
 export function backReact(): string {
-  return pick(content.events.back)
+  return pick(events.back)
 }
 
 // Look up a reaction/hover/recap for a StepVoice in a type-safe way.
@@ -67,14 +75,14 @@ export function recapFor<K extends string>(
 // ─── legacy named exports kept thin for callers that destructure ──────
 // (eventual goal: callers go through reactionFor/hoverFor instead.)
 
-type StepId = keyof typeof content.steps
+type StepId = keyof typeof create.steps
 
 export function react<K extends StepId>(step: K, value: string): string {
-  const voice = content.steps[step] as StepVoice<string>
+  const voice = create.steps[step] as StepVoice<string>
   return voice.reactions?.[value] ?? ack()
 }
 
 export function hover<K extends StepId>(step: K, value: string): string | undefined {
-  const voice = content.steps[step] as StepVoice<string>
+  const voice = create.steps[step] as StepVoice<string>
   return voice.hover?.[value]
 }

@@ -1,10 +1,10 @@
 import { Box, Text } from "ink"
 import { palette } from "./colors.js"
-import { speechToLines, withSpinner, type Speech } from "./Speech.js"
-import { useSpinner } from "./useSpinner.js"
+import { speechToLines, withSpinner, type Speech } from "./speech.js"
+import { useSpinner } from "./use-spinner.js"
 import { bubbleBorders, padRight, width, wrapLine } from "./bubble-render.js"
 
-export type { BubbleLine, Speech } from "./Speech.js"
+export type { BubbleLine, Speech } from "./speech.js"
 
 export interface BubbleProps {
   speech: Speech

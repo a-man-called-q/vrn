@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { speechToLines, speechIsEmpty, withSpinner } from "../ui/Speech.js"
+import { speechToLines, speechIsEmpty, withSpinner } from "../ui/speech.js"
 import { palette } from "../ui/colors.js"
 
 describe("speechToLines", () => {
